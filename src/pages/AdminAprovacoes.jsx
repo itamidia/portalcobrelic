@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/lib/supabase';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import AdminLayout from '../components/admin/AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -48,78 +48,140 @@ export default function AdminAprovacoes() {
   const [searchTerm, setSearchTerm] = useState('');
   const [editDialog, setEditDialog] = useState({ open: false, associado: null });
   const [deleteDialog, setDeleteDialog] = useState({ open: false, associado: null });
-  const [formData, setFormData] = useState({});
+  const [formData, setFormData] = useState({
+    nome: '',
+    cpf: '',
+    telefone: '',
+    email: '',
+    data_nascimento: '',
+    cidade: '',
+    estado: '',
+    endereco: '',
+    cep: '',
+    profissao: '',
+    biografia: '',
+  });
 
   const [aba, setAba] = useState('pendentes');
 
-  // Buscar todos os associados pendentes
+  // Buscar todos os representantes pendentes
   const { data: associadosPendentes = [], isLoading } = useQuery({
-    queryKey: ['associados-pendentes'],
-    queryFn: () => base44.entities.Associado.filter({ status_aprovacao: 'pendente' }, '-created_date'),
+    queryKey: ['representantes-pendentes'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('representantes')
+        .select('*')
+        .eq('status_aprovacao', 'pendente')
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data || [];
+    },
   });
 
   // Buscar cadastros recentes (todos, ordenados por data)
   const { data: todosAssociados = [], isLoading: isLoadingRecentes } = useQuery({
-    queryKey: ['associados-recentes'],
-    queryFn: () => base44.entities.Associado.list('-created_date', 50),
+    queryKey: ['representantes-recentes'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('representantes')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(50);
+      if (error) throw error;
+      return data || [];
+    },
   });
 
   // Filtrar os cadastros dos últimos 7 dias
   const seteDiasAtras = new Date();
   seteDiasAtras.setDate(seteDiasAtras.getDate() - 7);
   const associadosRecentes = todosAssociados.filter(a => 
-    a.created_date && new Date(a.created_date) >= seteDiasAtras
+    a.created_at && new Date(a.created_at) >= seteDiasAtras
   );
 
   // Mutation para aprovar
   const aprovarMutation = useMutation({
-    mutationFn: (id) => base44.entities.Associado.update(id, { status_aprovacao: 'aprovado' }),
+    mutationFn: async (id) => {
+      const { error } = await supabase
+        .from('representantes')
+        .update({ status_aprovacao: 'aprovado', ativo: true, updated_at: new Date().toISOString() })
+        .eq('id', id);
+      if (error) throw error;
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['associados-pendentes'] });
+      queryClient.invalidateQueries({ queryKey: ['representantes-pendentes'] });
+      queryClient.invalidateQueries({ queryKey: ['representantes-recentes'] });
       toast.success('Cadastro aprovado com sucesso!');
     },
-    onError: () => toast.error('Erro ao aprovar cadastro'),
+    onError: (error) => toast.error('Erro ao aprovar cadastro: ' + error.message),
   });
 
   // Mutation para rejeitar
   const rejeitarMutation = useMutation({
-    mutationFn: (id) => base44.entities.Associado.update(id, { status_aprovacao: 'rejeitado' }),
+    mutationFn: async (id) => {
+      const { error } = await supabase
+        .from('representantes')
+        .update({ status_aprovacao: 'rejeitado', updated_at: new Date().toISOString() })
+        .eq('id', id);
+      if (error) throw error;
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['associados-pendentes'] });
+      queryClient.invalidateQueries({ queryKey: ['representantes-pendentes'] });
+      queryClient.invalidateQueries({ queryKey: ['representantes-recentes'] });
       toast.success('Cadastro rejeitado!');
     },
-    onError: () => toast.error('Erro ao rejeitar cadastro'),
+    onError: (error) => toast.error('Erro ao rejeitar cadastro: ' + error.message),
   });
 
   // Mutation para editar
   const editarMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.Associado.update(id, data),
+    mutationFn: async ({ id, data }) => {
+      const { error } = await supabase
+        .from('representantes')
+        .update({ ...data, updated_at: new Date().toISOString() })
+        .eq('id', id);
+      if (error) throw error;
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['associados-pendentes'] });
+      queryClient.invalidateQueries({ queryKey: ['representantes-pendentes'] });
+      queryClient.invalidateQueries({ queryKey: ['representantes-recentes'] });
       setEditDialog({ open: false, associado: null });
       toast.success('Cadastro atualizado!');
     },
-    onError: () => toast.error('Erro ao atualizar cadastro'),
+    onError: (error) => toast.error('Erro ao atualizar cadastro: ' + error.message),
   });
 
   // Mutation para excluir
   const excluirMutation = useMutation({
-    mutationFn: (id) => base44.entities.Associado.delete(id),
+    mutationFn: async (id) => {
+      const { error } = await supabase
+        .from('representantes')
+        .delete()
+        .eq('id', id);
+      if (error) throw error;
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['associados-pendentes'] });
+      queryClient.invalidateQueries({ queryKey: ['representantes-pendentes'] });
+      queryClient.invalidateQueries({ queryKey: ['representantes-recentes'] });
       setDeleteDialog({ open: false, associado: null });
       toast.success('Cadastro excluído!');
     },
-    onError: () => toast.error('Erro ao excluir cadastro'),
+    onError: (error) => toast.error('Erro ao excluir cadastro: ' + error.message),
   });
 
   const handleOpenEdit = (associado) => {
     setFormData({
-      nome_completo: associado.nome_completo || '',
+      nome: associado.nome || '',
       cpf: associado.cpf || '',
       telefone: associado.telefone || '',
       email: associado.email || '',
       data_nascimento: associado.data_nascimento || '',
+      cidade: associado.cidade || '',
+      estado: associado.estado || '',
+      endereco: associado.endereco || '',
+      cep: associado.cep || '',
+      profissao: associado.profissao || '',
+      biografia: associado.biografia || '',
     });
     setEditDialog({ open: true, associado });
   };
@@ -248,7 +310,7 @@ export default function AdminAprovacoes() {
                         </div>
                         <div>
                           <div className="flex items-center gap-2">
-                            <h3 className="font-bold text-lg text-gray-800">{associado.nome_completo}</h3>
+                            <h3 className="font-bold text-lg text-gray-800">{associado.nome}</h3>
                             {aba === 'recentes' && associado.status_aprovacao && (
                               <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${statusLabel[associado.status_aprovacao]?.color}`}>
                                 {statusLabel[associado.status_aprovacao]?.label}
@@ -256,7 +318,7 @@ export default function AdminAprovacoes() {
                             )}
                           </div>
                           <p className="text-sm text-gray-500">
-                            Cadastrado em {associado.created_date ? format(new Date(associado.created_date), 'dd/MM/yyyy HH:mm') : 'N/A'}
+                            Cadastrado em {associado.created_at ? format(new Date(associado.created_at), 'dd/MM/yyyy HH:mm') : 'N/A'}
                           </p>
                         </div>
                       </div>
@@ -276,11 +338,11 @@ export default function AdminAprovacoes() {
                         </div>
                       </div>
 
-                      {associado.endereco && (
+                      {(associado.cidade || associado.estado) && (
                         <div className="flex items-center gap-2 text-gray-600 text-sm mt-2">
                           <MapPin className="w-4 h-4 text-gray-400" />
                           <span>
-                            {associado.endereco.cidade} - {associado.endereco.estado}
+                            {associado.cidade} - {associado.estado}
                           </span>
                         </div>
                       )}
@@ -290,15 +352,19 @@ export default function AdminAprovacoes() {
                     <div className="flex flex-wrap gap-2">
                       <Button
                         onClick={() => aprovarMutation.mutate(associado.id)}
-                        disabled={aprovarMutation.isPending}
-                        className="bg-green-600 hover:bg-green-700 text-white"
+                        disabled={aprovarMutation.isPending || associado.status_aprovacao === 'aprovado'}
+                        className={associado.status_aprovacao === 'aprovado' 
+                          ? 'bg-green-100 text-green-700 cursor-not-allowed' 
+                          : 'bg-green-600 hover:bg-green-700 text-white'}
                       >
                         {aprovarMutation.isPending ? (
                           <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                        ) : associado.status_aprovacao === 'aprovado' ? (
+                          <CheckCircle className="w-4 h-4 mr-2" />
                         ) : (
                           <CheckCircle className="w-4 h-4 mr-2" />
                         )}
-                        Ativar
+                        {associado.status_aprovacao === 'aprovado' ? 'Ativado' : 'Ativar'}
                       </Button>
                       <Button
                         onClick={() => handleOpenEdit(associado)}
@@ -333,10 +399,10 @@ export default function AdminAprovacoes() {
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div>
-              <Label>Nome Completo</Label>
+              <Label>Nome</Label>
               <Input
-                value={formData.nome_completo || ''}
-                onChange={(e) => setFormData({ ...formData, nome_completo: e.target.value })}
+                value={formData.nome || ''}
+                onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
                 className="mt-1"
               />
             </div>
@@ -373,6 +439,48 @@ export default function AdminAprovacoes() {
                 className="mt-1"
               />
             </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Cidade</Label>
+                <Input
+                  value={formData.cidade || ''}
+                  onChange={(e) => setFormData({ ...formData, cidade: e.target.value })}
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <Label>Estado</Label>
+                <Input
+                  value={formData.estado || ''}
+                  onChange={(e) => setFormData({ ...formData, estado: e.target.value })}
+                  className="mt-1"
+                />
+              </div>
+            </div>
+            <div>
+              <Label>Endereço</Label>
+              <Input
+                value={formData.endereco || ''}
+                onChange={(e) => setFormData({ ...formData, endereco: e.target.value })}
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <Label>CEP</Label>
+              <Input
+                value={formData.cep || ''}
+                onChange={(e) => setFormData({ ...formData, cep: e.target.value })}
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <Label>Profissão</Label>
+              <Input
+                value={formData.profissao || ''}
+                onChange={(e) => setFormData({ ...formData, profissao: e.target.value })}
+                className="mt-1"
+              />
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditDialog({ open: false, associado: null })}>
@@ -396,7 +504,7 @@ export default function AdminAprovacoes() {
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja excluir o cadastro de <strong>{deleteDialog.associado?.nome_completo}</strong>? 
+              Tem certeza que deseja excluir o cadastro de <strong>{deleteDialog.associado?.nome}</strong>? 
               Esta ação não pode ser desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>
