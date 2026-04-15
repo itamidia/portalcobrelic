@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/lib/supabase';
 import { useQuery } from '@tanstack/react-query';
 import { Shield, MapPin, Users, Heart, Info, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -29,16 +29,20 @@ export default function CidadeDetalhes() {
   const { data: noticias = [], isLoading: loadingNoticias } = useQuery({
     queryKey: ['noticias-cidade', estado, cidade],
     queryFn: async () => {
-      const allNoticias = await base44.entities.Noticia.filter({ ativo: true });
+      const { data: allNoticias, error } = await supabase
+        .from('noticias')
+        .select('*')
+        .eq('ativo', true);
+      if (error) throw error;
       
       // Filtra notícias da cidade específica
-      const noticiasCidade = allNoticias.filter(
+      const noticiasCidade = (allNoticias || []).filter(
         n => n.estado === estado && n.cidade === cidade
       );
       
       // Se não houver notícias da cidade, pega as nacionais
       if (noticiasCidade.length === 0) {
-        return allNoticias.filter(n => !n.estado && !n.cidade);
+        return (allNoticias || []).filter(n => !n.estado && !n.cidade);
       }
       
       return noticiasCidade;
@@ -50,10 +54,14 @@ export default function CidadeDetalhes() {
   const { data: anuncios = [], isLoading: loadingAnuncios } = useQuery({
     queryKey: ['anuncios-cidade', estado, cidade],
     queryFn: async () => {
-      const allAnuncios = await base44.entities.Anuncio.filter({ ativo: true });
+      const { data: allAnuncios, error } = await supabase
+        .from('anuncios')
+        .select('*')
+        .eq('ativo', true);
+      if (error) throw error;
       
       // Filtra anúncios da cidade específica
-      const anunciosCidade = allAnuncios.filter(
+      const anunciosCidade = (allAnuncios || []).filter(
         a => a.estado === estado && a.cidade === cidade
       );
       
@@ -67,7 +75,7 @@ export default function CidadeDetalhes() {
           anunciosPorPosicao[pos] = anuncioCidade;
         } else {
           // Busca nacional para essa posição
-          const anuncioNacional = allAnuncios.find(
+          const anuncioNacional = (allAnuncios || []).find(
             a => a.posicao === pos && !a.estado && !a.cidade
           );
           if (anuncioNacional) {
@@ -85,12 +93,14 @@ export default function CidadeDetalhes() {
   const { data: representantes = [], isLoading: loadingReps } = useQuery({
     queryKey: ['representantes-cidade', estado, cidade],
     queryFn: async () => {
-      const result = await base44.entities.Representante.filter({
-        ativo: true,
-        estado: estado,
-        cidade: cidade,
-      });
-      return result || [];
+      const { data, error } = await supabase
+        .from('representantes')
+        .select('*')
+        .eq('ativo', true)
+        .eq('estado', estado)
+        .eq('cidade', cidade);
+      if (error) throw error;
+      return data || [];
     },
     enabled: !!estado && !!cidade,
   });

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/lib/AuthContext';
 import { useMutation } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -12,8 +13,7 @@ import { toast } from 'sonner';
 CadastroPresidente.public = true;
 
 export default function CadastroPresidente() {
-  const [user, setUser] = useState(null);
-  const [checkingAuth, setCheckingAuth] = useState(true);
+  const { user, isAuthenticated, loading: checkingAuth } = useAuth();
   const [uploading, setUploading] = useState(false);
 
   const [formData, setFormData] = useState({
@@ -28,24 +28,10 @@ export default function CadastroPresidente() {
   });
 
   useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const isAuth = await base44.auth.isAuthenticated();
-        if (isAuth) {
-          const userData = await base44.auth.me();
-          setUser(userData);
-          setFormData(prev => ({ ...prev, email: userData.email }));
-        }
-        // Não redireciona se não estiver autenticado - a página é pública
-      } catch (error) {
-        console.error('Erro ao verificar autenticação:', error);
-        // Não redireciona em caso de erro - a página é pública
-      } finally {
-        setCheckingAuth(false);
-      }
-    };
-    checkAuth();
-  }, []);
+    if (user?.email) {
+      setFormData(prev => ({ ...prev, email: user.email }));
+    }
+  }, [user]);
 
   const validateCPF = (cpf) => {
     cpf = cpf.replace(/[^\d]/g, '');
@@ -90,11 +76,24 @@ export default function CadastroPresidente() {
 
     setUploading(true);
     try {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
-      setFormData({ ...formData, foto_url: file_url });
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}_${Math.random().toString(36).substring(2)}.${fileExt}`;
+      const filePath = `presidentes/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('fotos')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('fotos')
+        .getPublicUrl(filePath);
+
+      setFormData({ ...formData, foto_url: publicUrl });
       toast.success('Foto enviada com sucesso!');
     } catch (error) {
-      toast.error('Erro ao enviar foto');
+      toast.error('Erro ao enviar foto: ' + error.message);
     } finally {
       setUploading(false);
     }
@@ -103,18 +102,26 @@ export default function CadastroPresidente() {
   const createMutation = useMutation({
     mutationFn: async (data) => {
       // Check if user already has a Representante
-      const existingUser = await base44.entities.Representante.filter({ user_id: user.id });
-      if (existingUser.length > 0) {
+      const { data: existingUser, error: errorExisting } = await supabase
+        .from('representantes')
+        .select('*')
+        .eq('user_id', user.id);
+      if (errorExisting) throw errorExisting;
+      if (existingUser && existingUser.length > 0) {
         throw new Error('Você já possui um cadastro como representante');
       }
 
       // Verifica se CPF já existe
-      const existing = await base44.entities.Representante.filter({ cpf: data.cpf.replace(/\D/g, '') });
-      if (existing.length > 0) {
+      const { data: existing, error: errorCPF } = await supabase
+        .from('representantes')
+        .select('*')
+        .eq('cpf', data.cpf.replace(/\D/g, ''));
+      if (errorCPF) throw errorCPF;
+      if (existing && existing.length > 0) {
         throw new Error('CPF já cadastrado');
       }
 
-      return base44.entities.Representante.create({
+      const { error } = await supabase.from('representantes').insert([{
         nome: data.nome,
         cpf: data.cpf.replace(/\D/g, ''),
         telefone: data.telefone.replace(/\D/g, ''),
@@ -125,7 +132,8 @@ export default function CadastroPresidente() {
         foto_url: data.foto_url || '',
         ativo: false,
         user_id: user.id,
-      });
+      }]);
+      if (error) throw error;
     },
     onSuccess: () => {
       toast.success('Cadastro enviado para aprovação!');
@@ -141,7 +149,7 @@ export default function CadastroPresidente() {
   const handleSubmit = () => {
     if (!user) {
       toast.error('Você precisa estar logado para se cadastrar');
-      base44.auth.redirectToLogin(window.location.href);
+      window.location.href = '/login';
       return;
     }
     if (!formData.nome || !formData.cpf || !formData.telefone || !formData.email || !formData.cargo) {

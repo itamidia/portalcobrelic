@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { ArrowLeft, Heart, Shield, Users, CheckCircle } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/lib/supabase';
 import { useQuery } from '@tanstack/react-query';
 
 // Marca a página como pública
@@ -12,7 +12,14 @@ ClubeBeneficios.public = true;
 export default function ClubeBeneficios() {
   const { data: videos } = useQuery({
     queryKey: ['video-clube-public'],
-    queryFn: () => base44.entities.VideoClube.filter({ ativo: true }),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('video_clube')
+        .select('*')
+        .eq('ativo', true);
+      if (error) throw error;
+      return data || [];
+    },
   });
 
   const video = videos && videos.length > 0 ? videos[0] : null;
@@ -41,20 +48,22 @@ export default function ClubeBeneficios() {
               </Button>
             </Link>
             <div className="flex gap-2">
-              <Button 
-                onClick={() => base44.auth.redirectToLogin()}
-                variant="outline"
-                className="bg-white/10 border-white/20 text-white hover:bg-white/20 hover:text-white"
-              >
-                Fazer Login
-              </Button>
-              <Button 
-                onClick={() => base44.auth.redirectToLogin(createPageUrl('Cadastro'))}
-                className="bg-[#d4af37] hover:bg-[#c4a030] text-[#1e3a5f] font-semibold"
-              >
-                <Users className="w-4 h-4 mr-2" />
-                Associe-se
-              </Button>
+              <Link to="/login">
+                <Button 
+                  variant="outline"
+                  className="bg-white/10 border-white/20 text-white hover:bg-white/20 hover:text-white"
+                >
+                  Fazer Login
+                </Button>
+              </Link>
+              <Link to="/cadastro">
+                <Button 
+                  className="bg-[#d4af37] hover:bg-[#c4a030] text-[#1e3a5f] font-semibold"
+                >
+                  <Users className="w-4 h-4 mr-2" />
+                  Associe-se
+                </Button>
+              </Link>
             </div>
           </div>
           
@@ -133,13 +142,14 @@ export default function ClubeBeneficios() {
           <p className="text-gray-600 text-lg mb-6 max-w-2xl mx-auto">
             Associe-se agora e tenha acesso a todos esses benefícios exclusivos para líderes comunitários.
           </p>
-          <Button 
-            onClick={() => base44.auth.redirectToLogin(createPageUrl('Cadastro'))}
-            className="bg-[#1e3a5f] hover:bg-[#152a45] text-white font-bold text-lg px-10 py-4 h-auto"
-          >
-            <Users className="w-5 h-5 mr-2" />
-            Associe-se Agora
-          </Button>
+          <Link to="/cadastro">
+            <Button 
+              className="bg-[#1e3a5f] hover:bg-[#152a45] text-white font-bold text-lg px-10 py-4 h-auto"
+            >
+              <Users className="w-5 h-5 mr-2" />
+              Associe-se Agora
+            </Button>
+          </Link>
         </div>
       </div>
 

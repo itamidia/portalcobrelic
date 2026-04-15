@@ -103,24 +103,12 @@ export default function AdminRepresentantes() {
   }, []);
 
   const { data: representantes, isLoading } = useQuery({
-    queryKey: ['representantes-admin', user?.id, userRepresentante?.id, userRepresentante?.cargo, userRepresentante?.estado, userRepresentante?.cidade],
+    queryKey: ['representantes-admin'],
     queryFn: async () => {
-      let query = supabase.from('representantes').select('*');
-      
-      // REGRA 1: Presidente Estadual - vê apenas Presidentes Municipais e Líderes do seu estado
-      if (userRepresentante?.cargo === 'Presidente Estadual' && userRepresentante?.estado) {
-        query = query.eq('estado', userRepresentante.estado)
-                     .in('cargo', ['Presidente Municipal', 'Líder Comunitário']);
-      }
-      // REGRA 2: Presidente Municipal - vê apenas Líderes da sua cidade/estado
-      else if (userRepresentante?.cargo === 'Presidente Municipal' && userRepresentante?.cidade && userRepresentante?.estado) {
-        query = query.eq('estado', userRepresentante.estado)
-                     .eq('cidade', userRepresentante.cidade)
-                     .eq('cargo', 'Líder Comunitário');
-      }
-      // REGRA 3: Admin vê todos
-      
-      const { data, error } = await query.order('created_at', { ascending: false });
+      const { data, error } = await supabase
+        .from('representantes')
+        .select('*')
+        .order('created_at', { ascending: false });
       if (error) throw error;
       return data || [];
     },

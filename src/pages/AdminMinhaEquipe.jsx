@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import React, { useState } from 'react';
+import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/lib/AuthContext';
 import { useQuery } from '@tanstack/react-query';
 import AdminLayout from '../components/admin/AdminLayout';
 import { Card, CardContent } from '@/components/ui/card';
@@ -18,22 +19,9 @@ import {
 } from 'lucide-react';
 
 export default function AdminMinhaEquipe() {
-  const [user, setUser] = useState(null);
-  const [representanteAtual, setRepresentanteAtual] = useState(null);
   const [searchMunicipal, setSearchMunicipal] = useState('');
   const [searchLider, setSearchLider] = useState('');
-
-  useEffect(() => {
-    const loadUser = async () => {
-      const userData = await base44.auth.me();
-      setUser(userData);
-      
-      const allReps = await base44.entities.Representante.list();
-      const foundRep = allReps.find(rep => rep.email === userData.email);
-      setRepresentanteAtual(foundRep);
-    };
-    loadUser();
-  }, []);
+  const { representante: representanteAtual } = useAuth();
 
   const isPresidenteEstadual = representanteAtual?.cargo === 'Presidente Estadual' && representanteAtual?.ativo;
 
@@ -41,11 +29,15 @@ export default function AdminMinhaEquipe() {
   const { data: municipais = [], isLoading: loadingMunicipais } = useQuery({
     queryKey: ['presidentes-municipais', representanteAtual?.estado],
     queryFn: async () => {
-      return await base44.entities.Representante.filter({ 
-        cargo: 'Presidente Municipal',
-        estado: representanteAtual.estado,
-        ativo: true 
-      }, 'cidade');
+      const { data, error } = await supabase
+        .from('representantes')
+        .select('*')
+        .eq('cargo', 'Presidente Municipal')
+        .eq('estado', representanteAtual.estado)
+        .eq('ativo', true)
+        .order('cidade', { ascending: true });
+      if (error) throw error;
+      return data || [];
     },
     enabled: isPresidenteEstadual && !!representanteAtual?.estado,
   });
@@ -54,11 +46,15 @@ export default function AdminMinhaEquipe() {
   const { data: lideres = [], isLoading: loadingLideres } = useQuery({
     queryKey: ['lideres-comunitarios', representanteAtual?.estado],
     queryFn: async () => {
-      return await base44.entities.Representante.filter({ 
-        cargo: 'Líder Comunitário',
-        estado: representanteAtual.estado,
-        ativo: true 
-      }, 'cidade');
+      const { data, error } = await supabase
+        .from('representantes')
+        .select('*')
+        .eq('cargo', 'Líder Comunitário')
+        .eq('estado', representanteAtual.estado)
+        .eq('ativo', true)
+        .order('cidade', { ascending: true });
+      if (error) throw error;
+      return data || [];
     },
     enabled: isPresidenteEstadual && !!representanteAtual?.estado,
   });

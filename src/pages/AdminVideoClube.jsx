@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/lib/supabase';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import AdminLayout from '../components/admin/AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -18,16 +18,22 @@ export default function AdminVideoClube() {
 
   const { data: videos, isLoading } = useQuery({
     queryKey: ['video-clube'],
-    queryFn: () => base44.entities.VideoClube.list(),
-    onSuccess: (data) => {
-      if (data && data.length > 0) {
-        setFormData({
-          titulo: data[0].titulo || '',
-          url_video: data[0].url_video || '',
-        });
-      }
-    }
+    queryFn: async () => {
+      const { data, error } = await supabase.from('video_clube').select('*');
+      if (error) throw error;
+      return data || [];
+    },
   });
+
+  // Atualiza o form quando os dados carregam
+  React.useEffect(() => {
+    if (videos && videos.length > 0) {
+      setFormData({
+        titulo: videos[0].titulo || '',
+        url_video: videos[0].url_video || '',
+      });
+    }
+  }, [videos]);
 
   // Atualiza o form quando os dados carregam
   React.useEffect(() => {
@@ -42,30 +48,44 @@ export default function AdminVideoClube() {
   const saveMutation = useMutation({
     mutationFn: async (data) => {
       if (videos && videos.length > 0) {
-        return base44.entities.VideoClube.update(videos[0].id, data);
+        const { error } = await supabase
+          .from('video_clube')
+          .update(data)
+          .eq('id', videos[0].id);
+        if (error) throw error;
       } else {
-        return base44.entities.VideoClube.create({ ...data, ativo: true });
+        const { error } = await supabase
+          .from('video_clube')
+          .insert([{ ...data, ativo: true }]);
+        if (error) throw error;
       }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['video-clube'] });
       toast.success('Vídeo salvo com sucesso!');
     },
-    onError: () => {
-      toast.error('Erro ao salvar vídeo');
+    onError: (error) => {
+      toast.error('Erro ao salvar: ' + error.message);
     },
   });
 
   const deleteMutation = useMutation({
     mutationFn: async () => {
       if (videos && videos.length > 0) {
-        return base44.entities.VideoClube.delete(videos[0].id);
+        const { error } = await supabase
+          .from('video_clube')
+          .delete()
+          .eq('id', videos[0].id);
+        if (error) throw error;
       }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['video-clube'] });
       setFormData({ titulo: '', url_video: '' });
       toast.success('Vídeo removido!');
+    },
+    onError: (error) => {
+      toast.error('Erro ao remover: ' + error.message);
     },
   });
 

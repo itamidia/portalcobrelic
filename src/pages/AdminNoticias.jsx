@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/lib/AuthContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import AdminLayout from '../components/admin/AdminLayout';
 import { Button } from '@/components/ui/button';
@@ -32,9 +33,8 @@ const ESTADOS = [
 export default function AdminNoticias() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingNoticia, setEditingNoticia] = useState(null);
-  const [user, setUser] = useState(null);
-  const [userRepresentante, setUserRepresentante] = useState(null);
-  const [loadingUser, setLoadingUser] = useState(true);
+  const { user: authUser, representante: userRepresentante, loading: loadingUser } = useAuth();
+  const user = authUser;
   const [formData, setFormData] = useState({
     titulo: '',
     resumo: '',
@@ -51,70 +51,72 @@ export default function AdminNoticias() {
 
   const queryClient = useQueryClient();
 
-  // Carrega usuário logado e verifica se é representante
-  React.useEffect(() => {
-    const loadUser = async () => {
-      try {
-        const userData = await base44.auth.me();
-        setUser(userData);
-        
-        // Busca representante se não for admin puro
-        if (userData.role !== 'admin') {
-          const allReps = await base44.entities.Representante.list();
-          const foundRep = allReps.find(rep => rep.email === userData.email);
-          setUserRepresentante(foundRep);
-        }
-      } catch (error) {
-        console.error('Erro ao carregar usuário:', error);
-      } finally {
-        setLoadingUser(false);
-      }
-    };
-    loadUser();
-  }, []);
+  // user e userRepresentante vêm do AuthContext
 
   const { data: noticias, isLoading } = useQuery({
     queryKey: ['admin-noticias', loadingUser, userRepresentante?.id],
     queryFn: async () => {
-      const allNoticias = await base44.entities.Noticia.list('-created_date');
+      const { data: allNoticias, error } = await supabase
+        .from('noticias')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (error) throw error;
       
       // Se for representante Presidente Municipal, filtra por cidade
       if (userRepresentante && userRepresentante.cargo === 'Presidente Municipal') {
-        return allNoticias.filter(n => 
+        return (allNoticias || []).filter(n => 
           (n.estado === userRepresentante.estado && n.cidade === userRepresentante.cidade) ||
           (!n.estado && !n.cidade) // Mostra também as nacionais para referência
         );
       }
       
       // Admin puro vê tudo
-      return allNoticias;
+      return allNoticias || [];
     },
     enabled: !loadingUser,
   });
 
   const createMutation = useMutation({
-    mutationFn: (data) => base44.entities.Noticia.create(data),
+    mutationFn: async (data) => {
+      const { error } = await supabase.from('noticias').insert([data]);
+      if (error) throw error;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-noticias'] });
       toast.success('Notícia criada com sucesso!');
       closeDialog();
     },
+    onError: (error) => {
+      toast.error('Erro ao criar notícia: ' + error.message);
+    },
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.Noticia.update(id, data),
+    mutationFn: async ({ id, data }) => {
+      const { error } = await supabase.from('noticias').update(data).eq('id', id);
+      if (error) throw error;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-noticias'] });
       toast.success('Notícia atualizada!');
       closeDialog();
     },
+    onError: (error) => {
+      toast.error('Erro ao atualizar: ' + error.message);
+    },
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id) => base44.entities.Noticia.delete(id),
+    mutationFn: async (id) => {
+      const { error } = await supabase.from('noticias').delete().eq('id', id);
+      if (error) throw error;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-noticias'] });
       toast.success('Notícia excluída!');
+    },
+    onError: (error) => {
+      toast.error('Erro ao excluir: ' + error.message);
     },
   });
 
@@ -187,11 +189,24 @@ export default function AdminNoticias() {
     if (!file) return;
     
     try {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
-      setFormData({ ...formData, imagem_url: file_url });
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}_${Math.random().toString(36).substring(2)}.${fileExt}`;
+      const filePath = `noticias/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('fotos')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('fotos')
+        .getPublicUrl(filePath);
+
+      setFormData({ ...formData, imagem_url: publicUrl });
       toast.success('Imagem enviada!');
     } catch (error) {
-      toast.error('Erro ao enviar imagem');
+      toast.error('Erro ao enviar imagem: ' + error.message);
     }
   };
 

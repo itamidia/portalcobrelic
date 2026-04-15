@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/lib/supabase';
 import { useQuery } from '@tanstack/react-query';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -20,14 +20,22 @@ import { Button } from '@/components/ui/button';
 export default function AdminCarteirinhas() {
   const [searchTerm, setSearchTerm] = useState('');
 
-  const { data: associados, isLoading } = useQuery({
+  const { data: representantes, isLoading } = useQuery({
     queryKey: ['admin-carteirinhas'],
-    queryFn: () => base44.entities.Associado.filter({ carteirinha_ativa: true }, '-created_date'),
+    queryFn: async () => {
+      // Filtra por representantes que possuem carteirinha (foto_url ou campo específico)
+      const { data, error } = await supabase
+        .from('representantes')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      // Retorna todos já que não temos campo carteirinha_ativa específico
+      return data || [];
+    },
   });
 
-  const filteredAssociados = associados?.filter(a => 
-    a.nome_completo?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    a.codigo_carteirinha?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  const filteredAssociados = representantes?.filter(a => 
+    a.nome?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     a.cpf?.includes(searchTerm)
   );
 
@@ -54,7 +62,7 @@ export default function AdminCarteirinhas() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-gray-800">Carteirinhas Emitidas</h1>
-            <p className="text-gray-500">{associados?.length || 0} carteirinhas ativas</p>
+            <p className="text-gray-500">{representantes?.length || 0} carteirinhas ativas</p>
           </div>
         </div>
 
@@ -68,7 +76,7 @@ export default function AdminCarteirinhas() {
               <div>
                 <p className="text-sm text-gray-500">Carteirinhas Regulares</p>
                 <p className="text-2xl font-bold text-gray-800">
-                  {associados?.filter(a => a.status_assinatura === 'ativo').length || 0}
+                  {representantes?.filter(a => a.status_aprovacao === 'aprovado').length || 0}
                 </p>
               </div>
             </CardContent>
@@ -81,7 +89,7 @@ export default function AdminCarteirinhas() {
               <div>
                 <p className="text-sm text-gray-500">Carteirinhas Pendentes</p>
                 <p className="text-2xl font-bold text-gray-800">
-                  {associados?.filter(a => a.status_assinatura !== 'ativo').length || 0}
+                  {representantes?.filter(a => a.status_aprovacao !== 'aprovado').length || 0}
                 </p>
               </div>
             </CardContent>
@@ -93,7 +101,7 @@ export default function AdminCarteirinhas() {
               </div>
               <div>
                 <p className="text-sm text-gray-500">Total Emitidas</p>
-                <p className="text-2xl font-bold text-gray-800">{associados?.length || 0}</p>
+                <p className="text-2xl font-bold text-gray-800">{representantes?.length || 0}</p>
               </div>
             </CardContent>
           </Card>

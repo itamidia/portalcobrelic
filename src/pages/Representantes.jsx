@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/lib/supabase';
 import { useQuery } from '@tanstack/react-query';
 import { Shield, Search, Users, MapPin, Info, Heart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -36,8 +36,12 @@ export default function Representantes() {
   const { data: representantes = [], isLoading } = useQuery({
     queryKey: ['representantes-publico'],
     queryFn: async () => {
-      const result = await base44.entities.Representante.filter({ ativo: true });
-      return result || [];
+      const { data, error } = await supabase
+        .from('representantes')
+        .select('*')
+        .eq('ativo', true);
+      if (error) throw error;
+      return data || [];
     },
   });
 

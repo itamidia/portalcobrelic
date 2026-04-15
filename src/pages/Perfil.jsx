@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/lib/AuthContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -28,65 +29,83 @@ import {
 } from '@/components/ui/dialog';
 
 export default function Perfil() {
-  const [user, setUser] = useState(null);
+  const { user } = useAuth();
   const [editMode, setEditMode] = useState(false);
-  const [formData, setFormData] = useState({});
+  const [formData, setFormData] = useState({
+    nome: '',
+    telefone: '',
+    cep: '',
+    estado: '',
+    cidade: '',
+    bairro: '',
+    rua: '',
+    numero: '',
+    endereco: '',
+  });
   const queryClient = useQueryClient();
 
-  useEffect(() => {
-    const loadUser = async () => {
-      const userData = await base44.auth.me();
-      setUser(userData);
-    };
-    loadUser();
-  }, []);
-
-  const { data: associado, isLoading } = useQuery({
-    queryKey: ['associado', user?.email],
+  const { data: representante, isLoading } = useQuery({
+    queryKey: ['perfil-representante', user?.email],
     queryFn: async () => {
       if (!user?.email) return null;
-      const result = await base44.entities.Associado.filter({ email: user.email });
-      return result[0] || null;
+      const { data, error } = await supabase
+        .from('representantes')
+        .select('*')
+        .eq('email', user.email)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
     },
     enabled: !!user?.email,
   });
 
   useEffect(() => {
-    if (associado) {
+    if (representante) {
       setFormData({
-        nome_completo: associado.nome_completo || '',
-        telefone: associado.telefone || '',
-        endereco: associado.endereco || {},
+        nome: representante.nome || '',
+        telefone: representante.telefone || '',
+        cep: representante.cep || '',
+        estado: representante.estado || '',
+        cidade: representante.cidade || '',
+        bairro: representante.bairro || '',
+        rua: representante.rua || '',
+        numero: representante.numero || '',
+        endereco: representante.endereco || '',
       });
     }
-  }, [associado]);
+  }, [representante]);
 
   const updateMutation = useMutation({
-    mutationFn: (data) => base44.entities.Associado.update(associado.id, data),
+    mutationFn: async (data) => {
+      if (!representante?.id) throw new Error('ID não encontrado');
+      const { error } = await supabase
+        .from('representantes')
+        .update(data)
+        .eq('id', representante.id);
+      if (error) throw error;
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries(['associado']);
+      queryClient.invalidateQueries({ queryKey: ['perfil-representante'] });
       toast.success('Perfil atualizado com sucesso!');
       setEditMode(false);
     },
     onError: (error) => {
       console.error('Erro ao atualizar perfil:', error);
-      const mensagem = error?.message?.includes('null') 
-        ? 'Dados do perfil não carregados corretamente' 
-        : 'Erro ao atualizar perfil';
-      toast.error(mensagem);
+      toast.error('Erro ao atualizar perfil: ' + error.message);
     },
   });
 
   const handleSave = () => {
-    if (!associado?.id) {
-      toast.error('Dados do associado não encontrados');
+    if (!representante?.id) {
+      toast.error('Dados do representante não encontrados');
       return;
     }
     updateMutation.mutate(formData);
   };
 
-  const handleLogout = () => {
-    base44.auth.logout('/');
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    window.location.href = '/';
   };
 
   if (isLoading) {
@@ -120,12 +139,12 @@ export default function Perfil() {
               </div>
               <div className="flex-1">
                 <h2 className="text-lg font-bold text-gray-800">
-                  {associado?.nome_completo || user?.full_name || 'Nome não informado'}
+                  {representante?.nome || user?.user_metadata?.full_name || 'Nome não informado'}
                 </h2>
                 <p className="text-gray-500 text-sm">{user?.email}</p>
               </div>
             </div>
-            <StatusBadge status={associado?.status_assinatura || 'aguardando_pagamento'} />
+            <StatusBadge status={representante?.status_aprovacao || 'pendente'} />
           </CardContent>
         </Card>
 
@@ -149,8 +168,8 @@ export default function Perfil() {
             <div>
               <Label className="text-gray-600">Nome Completo</Label>
               <Input
-                value={formData.nome_completo || ''}
-                onChange={(e) => setFormData({ ...formData, nome_completo: e.target.value })}
+                value={formData.nome || ''}
+                onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
                 disabled={!editMode}
                 className="mt-1"
               />
@@ -171,11 +190,8 @@ export default function Perfil() {
               <div>
                 <Label className="text-gray-600">CEP</Label>
                 <Input
-                  value={formData.endereco?.cep || ''}
-                  onChange={(e) => setFormData({ 
-                    ...formData, 
-                    endereco: { ...formData.endereco, cep: e.target.value }
-                  })}
+                  value={formData.cep || ''}
+                  onChange={(e) => setFormData({ ...formData, cep: e.target.value })}
                   disabled={!editMode}
                   className="mt-1"
                 />
@@ -183,11 +199,8 @@ export default function Perfil() {
               <div>
                 <Label className="text-gray-600">Estado</Label>
                 <Input
-                  value={formData.endereco?.estado || ''}
-                  onChange={(e) => setFormData({ 
-                    ...formData, 
-                    endereco: { ...formData.endereco, estado: e.target.value }
-                  })}
+                  value={formData.estado || ''}
+                  onChange={(e) => setFormData({ ...formData, estado: e.target.value })}
                   disabled={!editMode}
                   className="mt-1"
                 />
@@ -197,11 +210,18 @@ export default function Perfil() {
             <div>
               <Label className="text-gray-600">Cidade</Label>
               <Input
-                value={formData.endereco?.cidade || ''}
-                onChange={(e) => setFormData({ 
-                  ...formData, 
-                  endereco: { ...formData.endereco, cidade: e.target.value }
-                })}
+                value={formData.cidade || ''}
+                onChange={(e) => setFormData({ ...formData, cidade: e.target.value })}
+                disabled={!editMode}
+                className="mt-1"
+              />
+            </div>
+
+            <div>
+              <Label className="text-gray-600">Bairro</Label>
+              <Input
+                value={formData.bairro || ''}
+                onChange={(e) => setFormData({ ...formData, bairro: e.target.value })}
                 disabled={!editMode}
                 className="mt-1"
               />
@@ -210,11 +230,8 @@ export default function Perfil() {
             <div>
               <Label className="text-gray-600">Rua</Label>
               <Input
-                value={formData.endereco?.rua || ''}
-                onChange={(e) => setFormData({ 
-                  ...formData, 
-                  endereco: { ...formData.endereco, rua: e.target.value }
-                })}
+                value={formData.rua || ''}
+                onChange={(e) => setFormData({ ...formData, rua: e.target.value })}
                 disabled={!editMode}
                 className="mt-1"
               />
@@ -223,11 +240,8 @@ export default function Perfil() {
             <div>
               <Label className="text-gray-600">Número</Label>
               <Input
-                value={formData.endereco?.numero || ''}
-                onChange={(e) => setFormData({ 
-                  ...formData, 
-                  endereco: { ...formData.endereco, numero: e.target.value }
-                })}
+                value={formData.numero || ''}
+                onChange={(e) => setFormData({ ...formData, numero: e.target.value })}
                 disabled={!editMode}
                 className="mt-1"
               />

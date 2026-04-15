@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/lib/supabase';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -46,32 +46,57 @@ export default function AdminBeneficios() {
 
   const { data: beneficios, isLoading } = useQuery({
     queryKey: ['admin-beneficios'],
-    queryFn: () => base44.entities.Beneficio.list('ordem'),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('beneficios')
+        .select('*')
+        .order('ordem', { ascending: true });
+      if (error) throw error;
+      return data || [];
+    },
   });
 
   const createMutation = useMutation({
-    mutationFn: (data) => base44.entities.Beneficio.create(data),
+    mutationFn: async (data) => {
+      const { error } = await supabase.from('beneficios').insert([data]);
+      if (error) throw error;
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries(['admin-beneficios']);
+      queryClient.invalidateQueries({ queryKey: ['admin-beneficios'] });
       toast.success('Benefício criado com sucesso!');
       handleCloseDialog();
+    },
+    onError: (error) => {
+      toast.error('Erro ao criar: ' + error.message);
     },
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.Beneficio.update(id, data),
+    mutationFn: async ({ id, data }) => {
+      const { error } = await supabase.from('beneficios').update(data).eq('id', id);
+      if (error) throw error;
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries(['admin-beneficios']);
+      queryClient.invalidateQueries({ queryKey: ['admin-beneficios'] });
       toast.success('Benefício atualizado com sucesso!');
       handleCloseDialog();
+    },
+    onError: (error) => {
+      toast.error('Erro ao atualizar: ' + error.message);
     },
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id) => base44.entities.Beneficio.delete(id),
+    mutationFn: async (id) => {
+      const { error } = await supabase.from('beneficios').delete().eq('id', id);
+      if (error) throw error;
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries(['admin-beneficios']);
+      queryClient.invalidateQueries({ queryKey: ['admin-beneficios'] });
       toast.success('Benefício removido!');
+    },
+    onError: (error) => {
+      toast.error('Erro ao remover: ' + error.message);
     },
   });
 

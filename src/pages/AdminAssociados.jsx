@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/lib/supabase';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -43,30 +43,40 @@ export default function AdminAssociados() {
 
   const { data: associados, isLoading } = useQuery({
     queryKey: ['admin-associados'],
-    queryFn: () => base44.entities.Associado.list('-created_date'),
-  });
-
-  const { data: pagamentos } = useQuery({
-    queryKey: ['admin-pagamentos', selectedAssociado?.id],
-    queryFn: () => base44.entities.Pagamento.filter({ associado_id: selectedAssociado?.id }, '-created_date'),
-    enabled: !!selectedAssociado,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('representantes')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data || [];
+    },
   });
 
   const updateMutation = useMutation({
-    mutationFn: (data) => base44.entities.Associado.update(selectedAssociado.id, data),
+    mutationFn: async (data) => {
+      const { error } = await supabase
+        .from('representantes')
+        .update(data)
+        .eq('id', selectedAssociado.id);
+      if (error) throw error;
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries(['admin-associados']);
+      queryClient.invalidateQueries({ queryKey: ['admin-associados'] });
       toast.success('Líder comunitário atualizado com sucesso!');
       setEditMode(false);
+    },
+    onError: (error) => {
+      toast.error('Erro ao atualizar: ' + error.message);
     },
   });
 
   const filteredAssociados = associados?.filter(a => {
     const matchSearch = 
-      a.nome_completo?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      a.nome?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       a.cpf?.includes(searchTerm) ||
       a.email?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchStatus = statusFilter === 'all' || a.status_assinatura === statusFilter;
+    const matchStatus = statusFilter === 'all' || a.status_aprovacao === statusFilter;
     return matchSearch && matchStatus;
   });
 
@@ -155,12 +165,12 @@ export default function AdminAssociados() {
               <TableBody>
                 {filteredAssociados?.map((associado) => (
                   <TableRow key={associado.id}>
-                    <TableCell className="font-medium">{associado.nome_completo}</TableCell>
+                    <TableCell className="font-medium">{associado.nome}</TableCell>
                     <TableCell>{formatCPF(associado.cpf)}</TableCell>
                     <TableCell>{associado.email}</TableCell>
                     <TableCell>{associado.telefone}</TableCell>
                     <TableCell>
-                      <StatusBadge status={associado.status_assinatura} />
+                      <StatusBadge status={associado.status_aprovacao} />
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-2">
@@ -206,15 +216,15 @@ export default function AdminAssociados() {
               <div className="space-y-6">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label>Nome Completo</Label>
+                    <Label>Nome</Label>
                     {editMode ? (
                       <Input
-                        value={editData.nome_completo || ''}
-                        onChange={(e) => setEditData({ ...editData, nome_completo: e.target.value })}
+                        value={editData.nome || ''}
+                        onChange={(e) => setEditData({ ...editData, nome: e.target.value })}
                         className="mt-1"
                       />
                     ) : (
-                      <p className="font-medium mt-1">{selectedAssociado.nome_completo}</p>
+                      <p className="font-medium mt-1">{selectedAssociado.nome}</p>
                     )}
                   </div>
                   <div>
@@ -241,58 +251,25 @@ export default function AdminAssociados() {
                     <Label>Status</Label>
                     {editMode ? (
                       <Select
-                        value={editData.status_assinatura}
-                        onValueChange={(value) => setEditData({ ...editData, status_assinatura: value })}
+                        value={editData.status_aprovacao}
+                        onValueChange={(value) => setEditData({ ...editData, status_aprovacao: value })}
                       >
                         <SelectTrigger className="mt-1">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="ativo">Ativo</SelectItem>
-                          <SelectItem value="aguardando_pagamento">Aguardando</SelectItem>
-                          <SelectItem value="atrasado">Atrasado</SelectItem>
-                          <SelectItem value="cancelado">Cancelado</SelectItem>
+                          <SelectItem value="aprovado">Aprovado</SelectItem>
+                          <SelectItem value="pendente">Pendente</SelectItem>
+                          <SelectItem value="rejeitado">Rejeitado</SelectItem>
                         </SelectContent>
                       </Select>
                     ) : (
                       <div className="mt-1">
-                        <StatusBadge status={selectedAssociado.status_assinatura} />
+                        <StatusBadge status={selectedAssociado.status_aprovacao} />
                       </div>
                     )}
                   </div>
-                  <div>
-                    <Label>Código Carteirinha</Label>
-                    <p className="font-mono font-medium mt-1 text-[#1e3a5f]">
-                      {selectedAssociado.codigo_carteirinha || 'Não gerada'}
-                    </p>
-                  </div>
                 </div>
-
-                {/* Payment History */}
-                {!editMode && pagamentos && pagamentos.length > 0 && (
-                  <div>
-                    <h3 className="font-semibold mb-3">Histórico de Pagamentos</h3>
-                    <div className="space-y-2">
-                      {pagamentos.map((p) => (
-                        <div key={p.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                          <div>
-                            <p className="font-medium">R$ {p.valor?.toFixed(2)}</p>
-                            <p className="text-sm text-gray-500">
-                              {p.data_pagamento ? format(new Date(p.data_pagamento), 'dd/MM/yyyy') : 'Pendente'}
-                            </p>
-                          </div>
-                          <span className={`px-2 py-1 text-xs rounded-full ${
-                            p.status === 'confirmado' ? 'bg-emerald-100 text-emerald-700' :
-                            p.status === 'atrasado' ? 'bg-red-100 text-red-700' :
-                            'bg-amber-100 text-amber-700'
-                          }`}>
-                            {p.status}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
 
                 {editMode && (
                   <div className="flex gap-3 pt-4">

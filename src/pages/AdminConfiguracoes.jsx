@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/lib/AuthContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -55,33 +56,17 @@ const defaultConfigs = {
 export default function AdminConfiguracoes() {
   const [configs, setConfigs] = useState(defaultConfigs);
   const [showTokens, setShowTokens] = useState({});
-  const [user, setUser] = useState(null);
-  const [userRepresentante, setUserRepresentante] = useState(null);
-  const [loadingUser, setLoadingUser] = useState(true);
+  const { user: authUser, representante: userRepresentante, loading: loadingUser } = useAuth();
+  const user = authUser;
   const queryClient = useQueryClient();
-
-  // Carrega usuário logado e verifica se é representante
-  useEffect(() => {
-    const loadUser = async () => {
-      try {
-        const userData = await base44.auth.me();
-        setUser(userData);
-        
-        const allReps = await base44.entities.Representante.list();
-        const foundRep = allReps.find(rep => rep.email === userData.email);
-        setUserRepresentante(foundRep || null);
-      } catch (error) {
-        console.error('Erro ao carregar usuário:', error);
-      } finally {
-        setLoadingUser(false);
-      }
-    };
-    loadUser();
-  }, []);
 
   const { data: savedConfigs, isLoading } = useQuery({
     queryKey: ['admin-configuracoes'],
-    queryFn: () => base44.entities.Configuracao.list(),
+    queryFn: async () => {
+      const { data, error } = await supabase.from('configuracoes').select('*');
+      if (error) throw error;
+      return data || [];
+    },
   });
 
   useEffect(() => {
@@ -99,29 +84,34 @@ export default function AdminConfiguracoes() {
       // Update or create each config
       for (const [chave, valor] of Object.entries(newConfigs)) {
         const existing = savedConfigs?.find(c => c.chave === chave);
+        const tipo = chave.includes('color') ? 'cor' : 
+              chave.includes('url') ? 'url' :
+              chave.includes('token') || chave.includes('password') ? 'token' : 'texto';
+        const categoria = chave.startsWith('asaas') ? 'asaas' :
+                   chave.startsWith('whatsapp') ? 'whatsapp' :
+                   chave.startsWith('smtp') ? 'email' :
+                   chave.includes('color') || chave.includes('logo') ? 'aparencia' : 'institucional';
+        
         if (existing) {
-          await base44.entities.Configuracao.update(existing.id, { valor });
+          const { error } = await supabase
+            .from('configuracoes')
+            .update({ valor, tipo, categoria })
+            .eq('id', existing.id);
+          if (error) throw error;
         } else {
-          await base44.entities.Configuracao.create({ 
-            chave, 
-            valor,
-            tipo: chave.includes('color') ? 'cor' : 
-                  chave.includes('url') ? 'url' :
-                  chave.includes('token') || chave.includes('password') ? 'token' : 'texto',
-            categoria: chave.startsWith('asaas') ? 'asaas' :
-                       chave.startsWith('whatsapp') ? 'whatsapp' :
-                       chave.startsWith('smtp') ? 'email' :
-                       chave.includes('color') || chave.includes('logo') ? 'aparencia' : 'institucional'
-          });
+          const { error } = await supabase
+            .from('configuracoes')
+            .insert([{ chave, valor, tipo, categoria }]);
+          if (error) throw error;
         }
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['admin-configuracoes']);
+      queryClient.invalidateQueries({ queryKey: ['admin-configuracoes'] });
       toast.success('Configurações salvas com sucesso!');
     },
-    onError: () => {
-      toast.error('Erro ao salvar configurações');
+    onError: (error) => {
+      toast.error('Erro ao salvar: ' + error.message);
     },
   });
 

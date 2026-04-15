@@ -1,5 +1,5 @@
 import React from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/lib/supabase';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui/card';
 import { Shield, CheckCircle, XCircle, Clock, AlertTriangle } from 'lucide-react';
@@ -9,12 +9,18 @@ export default function VerificarCarteirinha() {
   const urlParams = new URLSearchParams(window.location.search);
   const codigo = urlParams.get('codigo');
 
-  const { data: associado, isLoading, isError } = useQuery({
+  const { data: representante, isLoading, isError } = useQuery({
     queryKey: ['verificar-carteirinha', codigo],
     queryFn: async () => {
       if (!codigo) return null;
-      const result = await base44.entities.Associado.filter({ codigo_carteirinha: codigo });
-      return result[0] || null;
+      // Busca por ID já que não temos codigo_carteirinha
+      const { data, error } = await supabase
+        .from('representantes')
+        .select('*')
+        .eq('id', codigo)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
     },
     enabled: !!codigo,
   });
@@ -72,7 +78,7 @@ export default function VerificarCarteirinha() {
     );
   }
 
-  if (!codigo || !associado) {
+  if (!codigo || !representante) {
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
         <Card className="w-full max-w-md">
@@ -90,7 +96,7 @@ export default function VerificarCarteirinha() {
     );
   }
 
-  const statusConfig = getStatusConfig(associado.status_assinatura);
+  const statusConfig = getStatusConfig(representante.status_aprovacao === 'aprovado' ? 'ativo' : 'aguardando_pagamento');
   const StatusIcon = statusConfig.icon;
 
   return (
@@ -119,18 +125,18 @@ export default function VerificarCarteirinha() {
             {/* Associate Info */}
             <div className="space-y-4">
               <div className="text-center pb-4 border-b">
-                <h2 className="text-xl font-bold text-gray-800 mb-1">{associado.nome_completo}</h2>
-                <p className="text-gray-500 text-sm">Associado ANALC</p>
+                <h2 className="text-xl font-bold text-gray-800 mb-1">{representante.nome}</h2>
+                <p className="text-gray-500 text-sm">Representante COBRENC</p>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-xs text-gray-500 uppercase tracking-wider">CPF</p>
-                  <p className="font-semibold text-gray-800">{formatCPF(associado.cpf)}</p>
+                  <p className="font-semibold text-gray-800">{formatCPF(representante.cpf)}</p>
                 </div>
                 <div>
                   <p className="text-xs text-gray-500 uppercase tracking-wider">Código</p>
-                  <p className="font-mono font-bold text-[#1e3a5f]">{associado.codigo_carteirinha}</p>
+                  <p className="font-mono font-bold text-[#1e3a5f]">{representante.id}</p>
                 </div>
               </div>
 
@@ -139,13 +145,11 @@ export default function VerificarCarteirinha() {
                   <StatusIcon className={`w-8 h-8 ${statusConfig.textColor}`} />
                   <div>
                     <p className={`font-semibold ${statusConfig.textColor}`}>
-                      {associado.status_assinatura === 'ativo' 
-                        ? 'Mensalidade em dia' 
-                        : associado.status_assinatura === 'atrasado'
-                          ? 'Mensalidade em atraso'
-                          : associado.status_assinatura === 'cancelado'
-                            ? 'Associação cancelada'
-                            : 'Aguardando pagamento'
+                      {representante.status_aprovacao === 'aprovado' 
+                        ? 'Cadastro Aprovado' 
+                        : representante.status_aprovacao === 'rejeitado'
+                          ? 'Cadastro Rejeitado'
+                          : 'Aguardando Aprovação'
                       }
                     </p>
                     <p className="text-sm text-gray-600">

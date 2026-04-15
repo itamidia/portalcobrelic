@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/lib/AuthContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { Card, CardContent } from '@/components/ui/card';
@@ -18,61 +19,79 @@ export default function AdminDiretoria() {
   const [showDialog, setShowDialog] = useState(false);
   const [uploading, setUploading] = useState(false);
 
-  // Fetch current user and their representative status
-  const { data: user } = useQuery({
-    queryKey: ['currentUser'],
-    queryFn: () => base44.auth.me(),
-  });
-
-  const { data: currentRep } = useQuery({
-    queryKey: ['currentUserRep', user?.id],
-    queryFn: () => base44.entities.Representante.filter({ user_id: user.id }),
-    enabled: !!user,
-    select: (data) => data[0],
-  });
+  const { user: authUser, representante: currentRep, loading: loadingUser } = useAuth();
 
   // Only Presidente Municipal can access
-  const isPresidenteMunicipal = currentRep?.cargo === 'Presidente Municipal';
+  const isPresidenteMunicipal = currentRep?.cargo === 'Presidente Municipal' || currentRep?.cargo === 'admin';
 
   // Fetch all diretoria members from the same city
   const { data: diretoriaMembers = [], isLoading } = useQuery({
     queryKey: ['diretoriaMembers', currentRep?.cidade, currentRep?.estado],
     queryFn: async () => {
-      const members = await base44.entities.Representante.filter({
-        cidade: currentRep.cidade,
-        estado: currentRep.estado,
-      });
+      const { data: members, error } = await supabase
+        .from('representantes')
+        .select('*')
+        .eq('cidade', currentRep.cidade)
+        .eq('estado', currentRep.estado);
+      if (error) throw error;
       // Filter only diretoria positions
       const cargos = ['Vice Presidente', 'Secretário', 'Diretor Financeiro', 'Diretor de Articulação', 'Diretor Social'];
-      return members.filter(m => cargos.includes(m.cargo));
+      return (members || []).filter(m => cargos.includes(m.cargo));
     },
     enabled: !!currentRep && isPresidenteMunicipal,
   });
 
   // Mutations
   const activateMutation = useMutation({
-    mutationFn: ({ id, ativo }) => base44.entities.Representante.update(id, { ativo }),
+    mutationFn: async ({ id, ativo }) => {
+      const { error } = await supabase
+        .from('representantes')
+        .update({ ativo })
+        .eq('id', id);
+      if (error) throw error;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['diretoriaMembers'] });
       toast.success('Status atualizado com sucesso');
     },
+    onError: (error) => {
+      toast.error('Erro ao atualizar status: ' + error.message);
+    },
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.Representante.update(id, data),
+    mutationFn: async ({ id, data }) => {
+      const { error } = await supabase
+        .from('representantes')
+        .update(data)
+        .eq('id', id);
+      if (error) throw error;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['diretoriaMembers'] });
       setShowDialog(false);
       setEditingMember(null);
       toast.success('Membro atualizado com sucesso');
     },
+    onError: (error) => {
+      toast.error('Erro ao atualizar: ' + error.message);
+    },
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id) => base44.entities.Representante.delete(id),
+    mutationFn: async (id) => {
+      const { error } = await supabase
+        .from('representantes')
+        .delete()
+        .eq('id', id);
+      if (error) throw error;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['diretoriaMembers'] });
       toast.success('Membro excluído com sucesso');
+    },
+    onError: (error) => {
+      toast.error('Erro ao excluir: ' + error.message);
     },
   });
 
@@ -117,11 +136,24 @@ export default function AdminDiretoria() {
 
     setUploading(true);
     try {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
-      setEditingMember({ ...editingMember, foto_url: file_url });
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}_${Math.random().toString(36).substring(2)}.${fileExt}`;
+      const filePath = `diretoria/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('fotos')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('fotos')
+        .getPublicUrl(filePath);
+
+      setEditingMember({ ...editingMember, foto_url: publicUrl });
       toast.success('Foto enviada com sucesso!');
     } catch (error) {
-      toast.error('Erro ao enviar foto');
+      toast.error('Erro ao enviar foto: ' + error.message);
     } finally {
       setUploading(false);
     }

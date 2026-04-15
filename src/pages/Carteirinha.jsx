@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import React from 'react';
+import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/lib/AuthContext';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,22 +10,19 @@ import CarteirinhaDigital from '../components/associado/CarteirinhaDigital';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
 export default function Carteirinha() {
-  const [user, setUser] = useState(null);
-
-  useEffect(() => {
-    const loadUser = async () => {
-      const userData = await base44.auth.me();
-      setUser(userData);
-    };
-    loadUser();
-  }, []);
+  const { user } = useAuth();
 
   const { data: representante, isLoading } = useQuery({
-    queryKey: ['representante', user?.email],
+    queryKey: ['carteirinha-representante', user?.email],
     queryFn: async () => {
       if (!user?.email) return null;
-      const result = await base44.entities.Representante.filter({ email: user.email });
-      return result[0] || null;
+      const { data, error } = await supabase
+        .from('representantes')
+        .select('*')
+        .eq('email', user.email)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
     },
     enabled: !!user?.email,
   });

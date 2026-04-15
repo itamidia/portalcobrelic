@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import React from 'react';
+import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/lib/AuthContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import AdminLayout from '../components/admin/AdminLayout';
 import { Card, CardContent } from '@/components/ui/card';
@@ -24,34 +25,23 @@ import { format } from 'date-fns';
 
 export default function AdminAprovarPresidentes() {
   const queryClient = useQueryClient();
-  const [user, setUser] = useState(null);
-  const [representanteAtual, setRepresentanteAtual] = useState(null);
-
-  useEffect(() => {
-    const loadUser = async () => {
-      const userData = await base44.auth.me();
-      setUser(userData);
-      
-      // Busca o representante atual
-      const allReps = await base44.entities.Representante.list();
-      const foundRep = allReps.find(rep => rep.email === userData.email);
-      setRepresentanteAtual(foundRep);
-    };
-    loadUser();
-  }, []);
-
-  const isPresidenteNacional = user?.role === 'admin';
+  const { user: authUser, representante: representanteAtual } = useAuth();
+  
+  const isPresidenteNacional = authUser?.user_metadata?.role === 'admin' || authUser?.role === 'admin';
   const isPresidenteEstadual = representanteAtual?.cargo === 'Presidente Estadual' && representanteAtual?.ativo;
 
   // Buscar Presidentes Estaduais pendentes (para Presidente Nacional)
   const { data: estaduaisPendentes = [], isLoading: loadingEstaduais } = useQuery({
     queryKey: ['presidentes-estaduais-pendentes'],
     queryFn: async () => {
-      const all = await base44.entities.Representante.filter({ 
-        cargo: 'Presidente Estadual',
-        ativo: false 
-      }, '-created_date');
-      return all;
+      const { data, error } = await supabase
+        .from('representantes')
+        .select('*')
+        .eq('cargo', 'Presidente Estadual')
+        .eq('ativo', false)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data || [];
     },
     enabled: isPresidenteNacional,
   });
@@ -60,36 +50,51 @@ export default function AdminAprovarPresidentes() {
   const { data: municipaisPendentes = [], isLoading: loadingMunicipais } = useQuery({
     queryKey: ['presidentes-municipais-pendentes', representanteAtual?.estado],
     queryFn: async () => {
-      const all = await base44.entities.Representante.filter({ 
-        cargo: 'Presidente Municipal',
-        estado: representanteAtual.estado,
-        ativo: false 
-      }, '-created_date');
-      return all;
+      const { data, error } = await supabase
+        .from('representantes')
+        .select('*')
+        .eq('cargo', 'Presidente Municipal')
+        .eq('estado', representanteAtual.estado)
+        .eq('ativo', false)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data || [];
     },
     enabled: isPresidenteEstadual && !!representanteAtual?.estado,
   });
 
   // Mutation para aprovar
   const aprovarMutation = useMutation({
-    mutationFn: (id) => base44.entities.Representante.update(id, { ativo: true }),
+    mutationFn: async (id) => {
+      const { error } = await supabase
+        .from('representantes')
+        .update({ ativo: true, status_aprovacao: 'aprovado' })
+        .eq('id', id);
+      if (error) throw error;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['presidentes-estaduais-pendentes'] });
       queryClient.invalidateQueries({ queryKey: ['presidentes-municipais-pendentes'] });
       toast.success('Presidente aprovado com sucesso!');
     },
-    onError: () => toast.error('Erro ao aprovar cadastro'),
+    onError: (error) => toast.error('Erro ao aprovar: ' + error.message),
   });
 
   // Mutation para rejeitar
   const rejeitarMutation = useMutation({
-    mutationFn: (id) => base44.entities.Representante.delete(id),
+    mutationFn: async (id) => {
+      const { error } = await supabase
+        .from('representantes')
+        .delete()
+        .eq('id', id);
+      if (error) throw error;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['presidentes-estaduais-pendentes'] });
       queryClient.invalidateQueries({ queryKey: ['presidentes-municipais-pendentes'] });
       toast.success('Cadastro rejeitado!');
     },
-    onError: () => toast.error('Erro ao rejeitar cadastro'),
+    onError: (error) => toast.error('Erro ao rejeitar: ' + error.message),
   });
 
   const formatCPF = (cpf) => {

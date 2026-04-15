@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/lib/supabase';
 import { useQuery } from '@tanstack/react-query';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -28,18 +28,37 @@ export default function AdminFinanceiro() {
 
   const { data: pagamentos, isLoading: loadingPagamentos } = useQuery({
     queryKey: ['admin-pagamentos-all'],
-    queryFn: () => base44.entities.Pagamento.list('-created_date'),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('pagamentos')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data || [];
+    },
   });
 
   const { data: associados } = useQuery({
     queryKey: ['admin-associados-fin'],
-    queryFn: () => base44.entities.Associado.list(),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('representantes')
+        .select('*');
+      if (error) throw error;
+      return data || [];
+    },
   });
 
   const associadosMap = associados?.reduce((acc, a) => {
     acc[a.id] = a;
     return acc;
   }, {}) || {};
+  
+  // Map associado_id to nome for display
+  const getAssociadoNome = (associadoId) => {
+    const associado = associadosMap[associadoId];
+    return associado?.nome || 'Não encontrado';
+  };
 
   const filteredPagamentos = pagamentos?.filter(p => 
     statusFilter === 'all' || p.status === statusFilter

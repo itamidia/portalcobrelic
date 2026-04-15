@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/lib/supabase';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -36,12 +36,26 @@ export default function AdminNotificacoes() {
 
   const { data: notificacoes, isLoading } = useQuery({
     queryKey: ['admin-notificacoes'],
-    queryFn: () => base44.entities.Notificacao.list('-created_date', 50),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('notificacoes')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(50);
+      if (error) throw error;
+      return data || [];
+    },
   });
 
   const { data: associados } = useQuery({
     queryKey: ['admin-associados-notif'],
-    queryFn: () => base44.entities.Associado.list(),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('representantes')
+        .select('*');
+      if (error) throw error;
+      return data || [];
+    },
   });
 
   const sendMutation = useMutation({
@@ -52,10 +66,10 @@ export default function AdminNotificacoes() {
       if (data.destinatarios === 'todos') {
         targets = associados || [];
       } else if (data.destinatarios === 'ativos') {
-        targets = associados?.filter(a => a.status_assinatura === 'ativo') || [];
+        targets = associados?.filter(a => a.status_aprovacao === 'aprovado') || [];
       } else if (data.destinatarios === 'inadimplentes') {
         targets = associados?.filter(a => 
-          a.status_assinatura === 'atrasado' || a.status_assinatura === 'aguardando_pagamento'
+          a.status_aprovacao === 'pendente' || a.status_aprovacao === 'rejeitado'
         ) || [];
       }
 
@@ -70,19 +84,20 @@ export default function AdminNotificacoes() {
       }));
 
       if (notifications.length > 0) {
-        await base44.entities.Notificacao.bulkCreate(notifications);
+        const { error } = await supabase.from('notificacoes').insert(notifications);
+        if (error) throw error;
       }
 
       return { count: notifications.length };
     },
     onSuccess: (result) => {
-      queryClient.invalidateQueries(['admin-notificacoes']);
+      queryClient.invalidateQueries({ queryKey: ['admin-notificacoes'] });
       toast.success(`${result.count} notificações enviadas!`);
       setTitulo('');
       setMensagem('');
     },
-    onError: () => {
-      toast.error('Erro ao enviar notificações');
+    onError: (error) => {
+      toast.error('Erro ao enviar: ' + error.message);
     },
   });
 
