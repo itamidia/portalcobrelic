@@ -16,7 +16,8 @@ import {
   LogOut,
   ChevronRight,
   Shield,
-  FileText
+  FileText,
+  Upload
 } from 'lucide-react';
 import { toast } from 'sonner';
 import StatusBadge from '@/components/ui/StatusBadge';
@@ -31,16 +32,20 @@ import {
 export default function Perfil() {
   const { user } = useAuth();
   const [editMode, setEditMode] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [formData, setFormData] = useState({
     nome: '',
+    cpf: '',
     telefone: '',
-    cep: '',
-    estado: '',
+    email: '',
+    data_nascimento: '',
     cidade: '',
-    bairro: '',
-    rua: '',
-    numero: '',
+    estado: '',
     endereco: '',
+    cep: '',
+    profissao: '',
+    biografia: '',
+    foto_url: '',
   });
   const queryClient = useQueryClient();
 
@@ -63,14 +68,17 @@ export default function Perfil() {
     if (representante) {
       setFormData({
         nome: representante.nome || '',
+        cpf: representante.cpf || '',
         telefone: representante.telefone || '',
-        cep: representante.cep || '',
-        estado: representante.estado || '',
+        email: representante.email || '',
+        data_nascimento: representante.data_nascimento || '',
         cidade: representante.cidade || '',
-        bairro: representante.bairro || '',
-        rua: representante.rua || '',
-        numero: representante.numero || '',
+        estado: representante.estado || '',
         endereco: representante.endereco || '',
+        cep: representante.cep || '',
+        profissao: representante.profissao || '',
+        biografia: representante.biografia || '',
+        foto_url: representante.foto_url || '',
       });
     }
   }, [representante]);
@@ -78,9 +86,26 @@ export default function Perfil() {
   const updateMutation = useMutation({
     mutationFn: async (data) => {
       if (!representante?.id) throw new Error('ID não encontrado');
+      
+      // Prepara os dados para atualização
+      const updateData = {
+        nome: data.nome,
+        cpf: data.cpf,
+        telefone: data.telefone,
+        email: data.email,
+        data_nascimento: data.data_nascimento,
+        cidade: data.cidade,
+        estado: data.estado,
+        endereco: data.endereco,
+        cep: data.cep,
+        profissao: data.profissao,
+        biografia: data.biografia,
+        foto_url: data.foto_url,
+      };
+      
       const { error } = await supabase
         .from('representantes')
-        .update(data)
+        .update(updateData)
         .eq('id', representante.id);
       if (error) throw error;
     },
@@ -94,6 +119,36 @@ export default function Perfil() {
       toast.error('Erro ao atualizar perfil: ' + error.message);
     },
   });
+
+  const handleFileUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
+      const filePath = `representantes/${fileName}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from('uploads')
+        .upload(filePath, file);
+        
+      if (uploadError) throw uploadError;
+      
+      const { data: { publicUrl } } = supabase.storage
+        .from('uploads')
+        .getPublicUrl(filePath);
+        
+      setFormData({ ...formData, foto_url: publicUrl });
+      toast.success('Foto enviada com sucesso!');
+    } catch (error) {
+      console.error('Erro ao enviar foto:', error);
+      toast.error('Erro ao enviar foto: ' + error.message);
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const handleSave = () => {
     if (!representante?.id) {
@@ -134,14 +189,43 @@ export default function Perfil() {
         <Card className="border-0 shadow-lg">
           <CardContent className="p-6">
             <div className="flex items-center gap-4 mb-4">
-              <div className="w-16 h-16 bg-gradient-to-br from-[#1e3a5f] to-[#2a4a6f] rounded-full flex items-center justify-center">
-                <User className="w-8 h-8 text-white" />
+              <div className="relative">
+                {formData.foto_url ? (
+                  <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-gray-200">
+                    <img 
+                      src={formData.foto_url} 
+                      alt="Foto do representante" 
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                ) : (
+                  <div className="w-16 h-16 bg-gradient-to-br from-[#1e3a5f] to-[#2a4a6f] rounded-full flex items-center justify-center">
+                    <User className="w-8 h-8 text-white" />
+                  </div>
+                )}
+                {editMode && (
+                  <div className="absolute -bottom-1 -right-1">
+                    <label className="w-6 h-6 bg-[#1e3a5f] rounded-full flex items-center justify-center cursor-pointer hover:bg-[#152a45] transition-colors">
+                      <Upload className="w-3 h-3 text-white" />
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleFileUpload}
+                        disabled={!editMode}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
+                )}
               </div>
               <div className="flex-1">
                 <h2 className="text-lg font-bold text-gray-800">
-                  {representante?.nome || user?.user_metadata?.full_name || 'Nome não informado'}
+                  {formData.nome || user?.user_metadata?.full_name || 'Nome não informado'}
                 </h2>
                 <p className="text-gray-500 text-sm">{user?.email}</p>
+                {uploading && (
+                  <div className="text-xs text-blue-600 mt-1">Enviando foto...</div>
+                )}
               </div>
             </div>
             <StatusBadge status={representante?.status_aprovacao || 'pendente'} />
@@ -186,25 +270,37 @@ export default function Perfil() {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label className="text-gray-600">CEP</Label>
-                <Input
-                  value={formData.cep || ''}
-                  onChange={(e) => setFormData({ ...formData, cep: e.target.value })}
-                  disabled={!editMode}
-                  className="mt-1"
-                />
-              </div>
-              <div>
-                <Label className="text-gray-600">Estado</Label>
-                <Input
-                  value={formData.estado || ''}
-                  onChange={(e) => setFormData({ ...formData, estado: e.target.value })}
-                  disabled={!editMode}
-                  className="mt-1"
-                />
-              </div>
+            <div>
+              <Label className="text-gray-600">CPF</Label>
+              <Input
+                value={formData.cpf || ''}
+                onChange={(e) => setFormData({ ...formData, cpf: e.target.value })}
+                disabled={!editMode}
+                className="mt-1"
+              />
+            </div>
+
+            <div>
+              <Label className="text-gray-600">Data de Nascimento</Label>
+              <Input
+                type="date"
+                value={formData.data_nascimento || ''}
+                onChange={(e) => setFormData({ ...formData, data_nascimento: e.target.value })}
+                disabled={!editMode}
+                className="mt-1"
+              />
+            </div>
+
+            
+            <div>
+              <Label className="text-gray-600">Data de Nascimento</Label>
+              <Input
+                type="date"
+                value={formData.data_nascimento || ''}
+                onChange={(e) => setFormData({ ...formData, data_nascimento: e.target.value })}
+                disabled={!editMode}
+                className="mt-1"
+              />
             </div>
 
             <div>
@@ -218,35 +314,56 @@ export default function Perfil() {
             </div>
 
             <div>
-              <Label className="text-gray-600">Bairro</Label>
+              <Label className="text-gray-600">Estado</Label>
               <Input
-                value={formData.bairro || ''}
-                onChange={(e) => setFormData({ ...formData, bairro: e.target.value })}
+                value={formData.estado || ''}
+                onChange={(e) => setFormData({ ...formData, estado: e.target.value })}
                 disabled={!editMode}
                 className="mt-1"
               />
             </div>
 
             <div>
-              <Label className="text-gray-600">Rua</Label>
+              <Label className="text-gray-600">Endereço</Label>
               <Input
-                value={formData.rua || ''}
-                onChange={(e) => setFormData({ ...formData, rua: e.target.value })}
+                value={formData.endereco || ''}
+                onChange={(e) => setFormData({ ...formData, endereco: e.target.value })}
                 disabled={!editMode}
                 className="mt-1"
               />
             </div>
 
             <div>
-              <Label className="text-gray-600">Número</Label>
+              <Label className="text-gray-600">CEP</Label>
               <Input
-                value={formData.numero || ''}
-                onChange={(e) => setFormData({ ...formData, numero: e.target.value })}
+                value={formData.cep || ''}
+                onChange={(e) => setFormData({ ...formData, cep: e.target.value })}
                 disabled={!editMode}
                 className="mt-1"
               />
             </div>
 
+            <div>
+              <Label className="text-gray-600">Profissão</Label>
+              <Input
+                value={formData.profissao || ''}
+                onChange={(e) => setFormData({ ...formData, profissao: e.target.value })}
+                disabled={!editMode}
+                className="mt-1"
+              />
+            </div>
+
+            <div>
+              <Label className="text-gray-600">Biografia</Label>
+              <Input
+                value={formData.biografia || ''}
+                onChange={(e) => setFormData({ ...formData, biografia: e.target.value })}
+                disabled={!editMode}
+                className="mt-1"
+              />
+            </div>
+
+            
             {editMode && (
               <Button 
                 onClick={handleSave}

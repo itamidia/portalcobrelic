@@ -45,25 +45,41 @@ USING (
   )
 );
 
--- Policy: Qualquer um pode criar associados (para cadastro público)
-CREATE POLICY "Anyone can insert associados"
+-- Policy: Usuários autenticados podem criar associados vinculados ao seu representante
+CREATE POLICY "Users can insert own associado"
 ON associados FOR INSERT
-TO anon, authenticated
-WITH CHECK (true);
+TO authenticated
+WITH CHECK (
+  -- Se for admin, pode criar qualquer associado
+  EXISTS (
+    SELECT 1 FROM representantes 
+    WHERE user_id = auth.uid() 
+    AND role = 'admin'
+  )
+  OR
+  -- Se for representante, só pode criar associado com seu próprio ID
+  representante_id = (
+    SELECT id FROM representantes 
+    WHERE user_id = auth.uid()
+  )
+);
 
 -- Policy: Usuários podem ver seus próprios dados
 CREATE POLICY "Users can view own associado"
 ON associados FOR SELECT
 TO authenticated
 USING (
-  -- Se tem user_id e é o usuário logado
-  (user_id IS NOT NULL AND user_id = auth.uid())
-  OR
-  -- Ou se é admin
+  -- Se é admin, pode ver todos
   EXISTS (
     SELECT 1 FROM representantes 
     WHERE user_id = auth.uid() 
     AND role = 'admin'
+  )
+  OR
+  -- Se for representante, só pode ver seus próprios associados
+  representante_id = (
+    SELECT id FROM representantes 
+    WHERE user_id = auth.uid()
   )
 );
 

@@ -5,7 +5,7 @@ import { useAuth } from '@/lib/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 
-const pagesWithoutNav = ['Cadastro', 'VerificarCarteirinha', 'AdminLogin', 'Admin', 'AdminAssociados', 'AdminRepresentantes', 'AdminFinanceiro', 'AdminBeneficios', 'AdminNotificacoes', 'AdminConfiguracoes', 'Representantes', 'ClubeBeneficios', 'AdminVideoClube', 'AdminAprovacoes', 'AdminAnuncios', 'AdminNoticias', 'AdminCarteirinhas', 'CadastroPresidente', 'AdminAprovarPresidentes', 'AdminMinhaEquipe', 'CadastroDiretoria', 'AdminDiretoria'];
+const pagesWithoutNav = ['Cadastro', 'VerificarCarteirinha', 'AdminLogin', 'Admin', 'AdminAssociados', 'AdminRepresentantes', 'AdminFinanceiro', 'AdminBeneficios', 'AdminNotificacoes', 'AdminConfiguracoes', 'Representantes', 'AdminVideoClube', 'AdminAprovacoes', 'AdminAnuncios', 'AdminNoticias', 'AdminCarteirinhas', 'CadastroPresidente', 'AdminAprovarPresidentes', 'AdminMinhaEquipe', 'CadastroDiretoria', 'AdminDiretoria'];
 
 const publicPages = ['Representantes', 'VerificarCarteirinha', 'Cadastro', 'ClubeBeneficios', 'AdminLogin', 'CidadeDetalhes', 'CadastroPresidente', 'CadastroDiretoria'];
 

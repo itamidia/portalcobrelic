@@ -132,39 +132,47 @@ export default function Beneficios() {
 
       <div className="max-w-lg mx-auto px-4 -mt-6 space-y-4">
         {!temAssinatura ? (
-          <Alert className="border-[#d4af37] bg-[#d4af37]/5">
-            <Lock className="w-5 h-5 text-[#d4af37]" />
-            <AlertDescription className="text-gray-700">
-              <p className="font-semibold mb-2">Benefícios Premium</p>
-              {aguardandoPagamento ? (
-                <>
-                  <p className="text-sm mb-3 text-amber-700">Aguardando pagamento. Clique para pagar.</p>
-                  {associado?.link_pagamento && (
+          <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-4">
+            <div className="flex items-start gap-3">
+              <Lock className="w-5 h-5 text-[#d4af37] mt-0.5" />
+              <div className="flex-1">
+                <p className="font-semibold mb-2 text-gray-800">Benefícios Premium</p>
+                {aguardandoPagamento ? (
+                  <>
+                    <p className="text-sm mb-3 text-amber-700">Aguardando pagamento. Clique para pagar.</p>
                     <button
                       className="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg font-semibold text-sm flex items-center gap-2"
-                      onClick={() => window.open(associado.link_pagamento, '_blank')}
+                      onClick={() => {
+                        if (associado?.link_pagamento) {
+                          window.open(associado.link_pagamento, '_blank');
+                        } else {
+                          handleAssinar();
+                        }
+                      }}
+                      disabled={assinando}
                     >
-                      <ExternalLink className="w-4 h-4" /> Pagar Agora
+                      {assinando && <Loader2 className="w-4 h-4 animate-spin" />}
+                      {assinando ? 'Processando...' : <><ExternalLink className="w-4 h-4" /> Pagar Agora</>}
                     </button>
-                  )}
-                </>
-              ) : (
-                <>
-                  <p className="text-sm mb-3">
-                    Assine o plano de R$ 30/mês para ter acesso a Telemedicina e Clube de Descontos em +30 mil estabelecimentos em todo Brasil.
-                  </p>
-                  <button
-                    className="bg-[#d4af37] hover:bg-[#c4a030] text-[#1e3a5f] px-4 py-2 rounded-lg font-semibold text-sm flex items-center gap-2 disabled:opacity-50"
-                    onClick={handleAssinar}
-                    disabled={assinando}
-                  >
-                    {assinando && <Loader2 className="w-4 h-4 animate-spin" />}
-                    {assinando ? 'Processando...' : 'Assinar Agora'}
-                  </button>
-                </>
-              )}
-            </AlertDescription>
-          </Alert>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-sm mb-3 text-gray-600">
+                      Assine o plano de R$ 30/mês para ter acesso a Telemedicina e Clube de Descontos em +30 mil estabelecimentos em todo Brasil.
+                    </p>
+                    <button
+                      className="bg-[#d4af37] hover:bg-[#c4a030] text-[#1e3a5f] px-4 py-2 rounded-lg font-semibold text-sm flex items-center gap-2 disabled:opacity-50"
+                      onClick={handleAssinar}
+                      disabled={assinando}
+                    >
+                      {assinando && <Loader2 className="w-4 h-4 animate-spin" />}
+                      {assinando ? 'Processando...' : 'Assinar Agora'}
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
         ) : (
           <>
             {beneficios && beneficios.length > 0 ? (

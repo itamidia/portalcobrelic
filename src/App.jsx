@@ -37,7 +37,11 @@ const AuthenticatedApp = () => {
       <Route path="/VerificarCarteirinha" element={<Pages.VerificarCarteirinha />} />
       <Route path="/CidadeDetalhes" element={<Pages.CidadeDetalhes />} />
       <Route path="/Representantes" element={<Pages.Representantes />} />
-      <Route path="/Beneficios" element={<Pages.Beneficios />} />
+      <Route path="/Beneficios" element={
+        <LayoutWrapper currentPageName="Beneficios">
+          <Pages.Beneficios />
+        </LayoutWrapper>
+      } />
       <Route path="/admin/login" element={<Pages.AdminLogin />} />
       <Route path="/admin" element={<Pages.Admin />} />
       <Route path="/admin/aprovacoes" element={<Pages.AdminAprovacoes />} />
