@@ -3,7 +3,7 @@ import { QrCode, Shield, User } from 'lucide-react';
 
 export default function CarteirinhaDigital({ associado, showFull = true }) {
   const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(
-    `${window.location.origin}/VerificarCarteirinha?codigo=${associado?.codigo_carteirinha || ''}`
+    `${window.location.origin}/VerificarCarteirinha?codigo=${associado?.id || ''}`
   )}`;
 
   const formatCPF = (cpf) => {
@@ -11,7 +11,7 @@ export default function CarteirinhaDigital({ associado, showFull = true }) {
     return cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
   };
 
-  const isAtivo = associado?.status_assinatura === 'ativo';
+  const isAtivo = associado?.status_assinatura === 'ativo' || associado?.ativo === true;
 
   return (
     <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#1e3a5f] via-[#2a4a6f] to-[#1e3a5f] p-1">
@@ -44,7 +44,7 @@ export default function CarteirinhaDigital({ associado, showFull = true }) {
           <div className="flex-1 space-y-4">
             <div>
               <p className="text-white/50 text-xs uppercase tracking-wider mb-1">Nome do Associado</p>
-              <p className="text-white font-semibold text-lg">{associado?.nome_completo || 'Nome não informado'}</p>
+              <p className="text-white font-semibold text-lg">{associado?.nome || 'Nome não informado'}</p>
             </div>
             
             <div className="grid grid-cols-2 gap-4">

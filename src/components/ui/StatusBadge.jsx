@@ -8,6 +8,11 @@ const statusConfig = {
     icon: CheckCircle,
     className: 'bg-emerald-100 text-emerald-700 border-emerald-200',
   },
+  inativo: {
+    label: 'Inativo',
+    icon: XCircle,
+    className: 'bg-gray-100 text-gray-700 border-gray-200',
+  },
   aguardando_pagamento: {
     label: 'Aguardando Pagamento',
     icon: Clock,
@@ -22,6 +27,11 @@ const statusConfig = {
     label: 'Cancelado',
     icon: XCircle,
     className: 'bg-gray-100 text-gray-700 border-gray-200',
+  },
+  pendente: {
+    label: 'Pendente',
+    icon: Clock,
+    className: 'bg-blue-100 text-blue-700 border-blue-200',
   },
 };
 

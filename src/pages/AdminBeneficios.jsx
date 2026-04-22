@@ -22,15 +22,40 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Plus, Edit, Trash2, Gift, Loader2, X } from 'lucide-react';
+import { 
+  Plus, Edit, Trash2, Gift, Loader2, X, Heart, Wallet, GraduationCap, 
+  ShoppingBag, Stethoscope, Briefcase, Car, Home, Plane, Smartphone, 
+  Zap, Coffee, BookOpen, Dumbbell, Music, Camera, Award, Shield, 
+  Clock, MapPin, Star, TrendingUp, Users, Search
+} from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 
-const ICONS = ['Gift', 'Heart', 'Wallet', 'GraduationCap', 'ShoppingBag', 'Stethoscope'];
+const ICONS = [
+  'Gift', 'Heart', 'Wallet', 'GraduationCap', 'ShoppingBag', 'Stethoscope',
+  'Briefcase', 'Car', 'Home', 'Plane', 'Smartphone', 'Zap',
+  'Coffee', 'BookOpen', 'Dumbbell', 'Music', 'Camera', 'Award',
+  'Shield', 'Clock', 'MapPin', 'Star', 'TrendingUp', 'Users'
+];
+
+// Mapeamento de ícones para componentes Lucide
+const iconComponents = {
+  Gift, Heart, Wallet, GraduationCap, ShoppingBag, Stethoscope,
+  Briefcase, Car, Home, Plane, Smartphone, Zap,
+  Coffee, BookOpen, Dumbbell, Music, Camera, Award,
+  Shield, Clock, MapPin, Star, TrendingUp, Users
+};
+
+// Componente para renderizar o ícone dinamicamente
+function DynamicIcon({ iconName, className }) {
+  const IconComponent = iconComponents[iconName] || Gift;
+  return <IconComponent className={className} />;
+}
 
 export default function AdminBeneficios() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingBeneficio, setEditingBeneficio] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
   const [formData, setFormData] = useState({
     titulo: '',
     descricao: '',
@@ -193,18 +218,38 @@ export default function AdminBeneficios() {
           </Button>
         </div>
 
+        {/* Search */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <Input
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Buscar benefício por título ou descrição..."
+            className="pl-10"
+          />
+        </div>
+
         {/* Benefits Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {beneficios?.map((beneficio) => (
+          {beneficios?.filter(b => 
+            searchTerm === '' || 
+            b.titulo?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            b.descricao?.toLowerCase().includes(searchTerm.toLowerCase())
+          ).map((beneficio) => (
             <Card key={beneficio.id} className={!beneficio.ativo ? 'opacity-60' : ''}>
               <CardContent className="p-6">
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center gap-3">
                     <div className="w-12 h-12 bg-[#1e3a5f]/10 rounded-xl flex items-center justify-center">
-                      <Gift className="w-6 h-6 text-[#1e3a5f]" />
+                      <DynamicIcon iconName={beneficio.icone} className="w-6 h-6 text-[#1e3a5f]" />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-gray-800">{beneficio.titulo}</h3>
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-semibold text-gray-800">{beneficio.titulo}</h3>
+                        <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
+                          #{beneficio.ordem || 0}
+                        </span>
+                      </div>
                       <span className={`text-xs px-2 py-0.5 rounded-full ${
                         beneficio.ativo 
                           ? 'bg-emerald-100 text-emerald-700' 
@@ -291,11 +336,21 @@ export default function AdminBeneficios() {
                   onValueChange={(value) => setFormData({ ...formData, icone: value })}
                 >
                   <SelectTrigger className="mt-1">
-                    <SelectValue />
+                    <SelectValue>
+                      <div className="flex items-center gap-2">
+                        <DynamicIcon iconName={formData.icone} className="w-4 h-4" />
+                        <span>{formData.icone}</span>
+                      </div>
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     {ICONS.map((icon) => (
-                      <SelectItem key={icon} value={icon}>{icon}</SelectItem>
+                      <SelectItem key={icon} value={icon}>
+                        <div className="flex items-center gap-2">
+                          <DynamicIcon iconName={icon} className="w-4 h-4" />
+                          <span>{icon}</span>
+                        </div>
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -346,12 +401,26 @@ export default function AdminBeneficios() {
                 </div>
               </div>
 
-              <div className="flex items-center gap-3">
-                <Switch
-                  checked={formData.ativo}
-                  onCheckedChange={(checked) => setFormData({ ...formData, ativo: checked })}
-                />
-                <Label>Benefício ativo</Label>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Ordem (1-100)</Label>
+                  <Input
+                    type="number"
+                    min="1"
+                    max="100"
+                    value={formData.ordem}
+                    onChange={(e) => setFormData({ ...formData, ordem: parseInt(e.target.value) || 0 })}
+                    className="mt-1"
+                    placeholder="0"
+                  />
+                </div>
+                <div className="flex items-center gap-3 pt-7">
+                  <Switch
+                    checked={formData.ativo}
+                    onCheckedChange={(checked) => setFormData({ ...formData, ativo: checked })}
+                  />
+                  <Label>Benefício ativo</Label>
+                </div>
               </div>
 
               <div className="flex gap-3 pt-4">

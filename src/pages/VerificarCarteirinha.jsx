@@ -13,7 +13,7 @@ export default function VerificarCarteirinha() {
     queryKey: ['verificar-carteirinha', codigo],
     queryFn: async () => {
       if (!codigo) return null;
-      // Busca por ID já que não temos codigo_carteirinha
+      // Busca por ID na tabela representantes
       const { data, error } = await supabase
         .from('representantes')
         .select('*')
@@ -96,7 +96,7 @@ export default function VerificarCarteirinha() {
     );
   }
 
-  const statusConfig = getStatusConfig(representante.status_aprovacao === 'aprovado' ? 'ativo' : 'aguardando_pagamento');
+  const statusConfig = getStatusConfig(representante.ativo ? 'ativo' : 'aguardando_pagamento');
   const StatusIcon = statusConfig.icon;
 
   return (
@@ -126,7 +126,7 @@ export default function VerificarCarteirinha() {
             <div className="space-y-4">
               <div className="text-center pb-4 border-b">
                 <h2 className="text-xl font-bold text-gray-800 mb-1">{representante.nome}</h2>
-                <p className="text-gray-500 text-sm">Representante COBRENC</p>
+                <p className="text-gray-500 text-sm">{representante.cargo || 'Representante COBRENC'}</p>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -136,7 +136,7 @@ export default function VerificarCarteirinha() {
                 </div>
                 <div>
                   <p className="text-xs text-gray-500 uppercase tracking-wider">Código</p>
-                  <p className="font-mono font-bold text-[#1e3a5f]">{representante.id}</p>
+                  <p className="font-mono font-bold text-[#1e3a5f]">{representante.id?.substring(0, 8).toUpperCase()}</p>
                 </div>
               </div>
 
@@ -145,11 +145,13 @@ export default function VerificarCarteirinha() {
                   <StatusIcon className={`w-8 h-8 ${statusConfig.textColor}`} />
                   <div>
                     <p className={`font-semibold ${statusConfig.textColor}`}>
-                      {representante.status_aprovacao === 'aprovado' 
-                        ? 'Cadastro Aprovado' 
+                      {representante.ativo === true 
+                        ? 'Cadastro Ativo' 
                         : representante.status_aprovacao === 'rejeitado'
                           ? 'Cadastro Rejeitado'
-                          : 'Aguardando Aprovação'
+                          : representante.status_aprovacao === 'aprovado'
+                            ? 'Cadastro Aprovado (Inativo)'
+                            : 'Aguardando Aprovação'
                       }
                     </p>
                     <p className="text-sm text-gray-600">
