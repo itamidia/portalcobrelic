@@ -5,9 +5,9 @@ import { useAuth } from '@/lib/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 
-const pagesWithoutNav = ['Cadastro', 'VerificarCarteirinha', 'AdminLogin', 'Admin', 'AdminAssociados', 'AdminRepresentantes', 'AdminFinanceiro', 'AdminBeneficios', 'AdminNotificacoes', 'AdminConfiguracoes', 'Representantes', 'AdminVideoClube', 'AdminAprovacoes', 'AdminAnuncios', 'AdminNoticias', 'AdminCarteirinhas', 'CadastroPresidente', 'AdminAprovarPresidentes', 'AdminMinhaEquipe', 'CadastroDiretoria', 'AdminDiretoria'];
+const pagesWithoutNav = ['Cadastro', 'VerificarCarteirinha', 'AdminLogin', 'Admin', 'AdminAssociados', 'AdminRepresentantes', 'AdminFinanceiro', 'AdminBeneficios', 'AdminNotificacoes', 'AdminConfiguracoes', 'Representantes', 'AdminVideoClube', 'AdminAprovacoes', 'AdminAnuncios', 'AdminNoticias', 'AdminCarteirinhas', 'CadastroPresidente', 'AdminAprovarPresidentes', 'AdminMinhaEquipe', 'CadastroDiretoria', 'AdminDiretoria', 'Associados'];
 
-const publicPages = ['Representantes', 'VerificarCarteirinha', 'Cadastro', 'ClubeBeneficios', 'AdminLogin', 'CidadeDetalhes', 'CadastroPresidente', 'CadastroDiretoria'];
+const publicPages = ['Representantes', 'VerificarCarteirinha', 'Cadastro', 'ClubeBeneficios', 'AdminLogin', 'CidadeDetalhes', 'CadastroPresidente', 'CadastroDiretoria', 'Associados'];
 
 const userPages = ['Dashboard', 'Perfil', 'Carteirinha', 'Beneficios'];
 

@@ -80,6 +80,8 @@ import Perfil from './pages/Perfil';
 import Planos from './pages/Planos';
 import VerificarCarteirinha from './pages/VerificarCarteirinha';
 import Representantes from './pages/Representantes';
+import Associados from './pages/Associados';
+import Anuncios from './pages/Anuncios';
 import __Layout from './Layout.jsx';
 
 
@@ -117,6 +119,8 @@ export const PAGES = {
     "Planos": Planos,
     "VerificarCarteirinha": VerificarCarteirinha,
     "Representantes": Representantes,
+    "Associados": Associados,
+    "Anuncios": Anuncios,
 }
 
 export const pagesConfig = {

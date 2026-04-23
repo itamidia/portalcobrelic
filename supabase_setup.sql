@@ -174,6 +174,16 @@ CREATE TABLE IF NOT EXISTS anuncios (
   updated_at TIMESTAMPTZ DEFAULT now()
 );
 
+-- Tabela de Vídeo Clube
+CREATE TABLE IF NOT EXISTS video_clube (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  titulo TEXT NOT NULL,
+  url_video TEXT,
+  ativo BOOLEAN DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+
 -- Tabela de Configurações
 CREATE TABLE IF NOT EXISTS configuracoes (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -257,6 +267,8 @@ CREATE TRIGGER update_parceiros_updated_at BEFORE UPDATE ON parceiros
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_equipe_updated_at BEFORE UPDATE ON equipe
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_video_clube_updated_at BEFORE UPDATE ON video_clube
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- ============================================
 -- 5. RLS - HABILITAR
@@ -274,6 +286,7 @@ ALTER TABLE notificacoes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE equipe ENABLE ROW LEVEL SECURITY;
 ALTER TABLE cidades ENABLE ROW LEVEL SECURITY;
 ALTER TABLE configuracoes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE video_clube ENABLE ROW LEVEL SECURITY;
 
 -- ============================================
 -- 6. RLS - POLÍTICAS
@@ -306,8 +319,28 @@ CREATE POLICY "Parceiros publicos" ON parceiros
   FOR SELECT TO anon, authenticated USING (ativo = true);
 CREATE POLICY "Noticias publicas" ON noticias
   FOR SELECT TO anon, authenticated USING (ativo = true);
+CREATE POLICY "Noticias inserir autenticado" ON noticias
+  FOR INSERT TO authenticated WITH CHECK (true);
+CREATE POLICY "Noticias atualizar autenticado" ON noticias
+  FOR UPDATE TO authenticated USING (true);
+CREATE POLICY "Noticias deletar autenticado" ON noticias
+  FOR DELETE TO authenticated USING (true);
+CREATE POLICY "Video Clube publico" ON video_clube
+  FOR SELECT TO anon, authenticated USING (ativo = true);
+CREATE POLICY "Video Clube inserir autenticado" ON video_clube
+  FOR INSERT TO authenticated WITH CHECK (true);
+CREATE POLICY "Video Clube atualizar autenticado" ON video_clube
+  FOR UPDATE TO authenticated USING (true);
+CREATE POLICY "Video Clube deletar autenticado" ON video_clube
+  FOR DELETE TO authenticated USING (true);
 CREATE POLICY "Anuncios publicos" ON anuncios
   FOR SELECT TO anon, authenticated USING (ativo = true);
+CREATE POLICY "Anuncios inserir autenticado" ON anuncios
+  FOR INSERT TO authenticated WITH CHECK (true);
+CREATE POLICY "Anuncios atualizar autenticado" ON anuncios
+  FOR UPDATE TO authenticated USING (true);
+CREATE POLICY "Anuncios deletar autenticado" ON anuncios
+  FOR DELETE TO authenticated USING (true);
 CREATE POLICY "Cidades publicas" ON cidades
   FOR SELECT TO anon, authenticated USING (true);
 CREATE POLICY "Diretoria publica" ON diretoria

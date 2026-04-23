@@ -45,7 +45,7 @@ const menuItems = [
   { name: 'Aprovar Presidentes', icon: Shield, page: 'AdminAprovarPresidentes', roles: ['admin', 'Presidente Estadual'] },
   { name: 'Gerenciar Diretoria', icon: UserCheck, page: 'AdminDiretoria', roles: ['Presidente Municipal'] },
   { name: 'Minha Equipe', icon: Users, page: 'AdminMinhaEquipe', roles: ['Presidente Estadual'] },
-  { name: 'Líderes Comunitários', icon: Users, page: 'AdminAssociados' },
+  { name: 'Associados', icon: Users, page: 'AdminAssociados' },
   { name: 'Representantes', icon: UserCheck, page: 'AdminRepresentantes' },
   { name: 'Financeiro', icon: Wallet, page: 'AdminFinanceiro' },
   { name: 'Benefícios', icon: Gift, page: 'AdminBeneficios' },

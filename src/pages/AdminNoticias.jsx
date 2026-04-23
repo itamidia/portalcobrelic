@@ -40,13 +40,10 @@ export default function AdminNoticias() {
     resumo: '',
     conteudo: '',
     imagem_url: '',
-    link_externo: '',
     categoria: 'geral',
-    estado: '',
-    cidade: '',
     destaque: false,
     ativo: true,
-    data_publicacao: format(new Date(), 'yyyy-MM-dd'),
+    publicado_em: format(new Date(), 'yyyy-MM-dd'),
   });
 
   const queryClient = useQueryClient();
@@ -54,31 +51,25 @@ export default function AdminNoticias() {
   // user e userRepresentante vêm do AuthContext
 
   const { data: noticias, isLoading } = useQuery({
-    queryKey: ['admin-noticias', loadingUser, userRepresentante?.id],
+    queryKey: ['admin-noticias'],
     queryFn: async () => {
-      const { data: allNoticias, error } = await supabase
+      const { data, error } = await supabase
         .from('noticias')
         .select('*')
         .order('created_at', { ascending: false });
       if (error) throw error;
-      
-      // Se for representante Presidente Municipal, filtra por cidade
-      if (userRepresentante && userRepresentante.cargo === 'Presidente Municipal') {
-        return (allNoticias || []).filter(n => 
-          (n.estado === userRepresentante.estado && n.cidade === userRepresentante.cidade) ||
-          (!n.estado && !n.cidade) // Mostra também as nacionais para referência
-        );
-      }
-      
-      // Admin puro vê tudo
-      return allNoticias || [];
+      return data || [];
     },
-    enabled: !loadingUser,
   });
 
   const createMutation = useMutation({
     mutationFn: async (data) => {
-      const { error } = await supabase.from('noticias').insert([data]);
+      // Converter data string para datetime
+      const cleanData = {
+        ...data,
+        publicado_em: data.publicado_em ? new Date(data.publicado_em).toISOString() : new Date().toISOString(),
+      };
+      const { error } = await supabase.from('noticias').insert([cleanData]);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -93,7 +84,12 @@ export default function AdminNoticias() {
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }) => {
-      const { error } = await supabase.from('noticias').update(data).eq('id', id);
+      // Converter data string para datetime
+      const cleanData = {
+        ...data,
+        publicado_em: data.publicado_em ? new Date(data.publicado_em).toISOString() : new Date().toISOString(),
+      };
+      const { error } = await supabase.from('noticias').update(cleanData).eq('id', id);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -122,50 +118,30 @@ export default function AdminNoticias() {
 
   const openCreate = () => {
     setEditingNoticia(null);
-    const initialData = {
+    setFormData({
       titulo: '',
       resumo: '',
       conteudo: '',
       imagem_url: '',
-      link_externo: '',
       categoria: 'geral',
-      estado: '',
-      cidade: '',
       destaque: false,
       ativo: true,
-      data_publicacao: format(new Date(), 'yyyy-MM-dd'),
-    };
-    
-    // Se for Presidente Municipal, preenche automaticamente estado/cidade
-    if (userRepresentante?.cargo === 'Presidente Municipal') {
-      initialData.estado = userRepresentante.estado;
-      initialData.cidade = userRepresentante.cidade;
-    }
-    
-    setFormData(initialData);
+      publicado_em: format(new Date(), 'yyyy-MM-dd'),
+    });
     setDialogOpen(true);
   };
 
   const openEdit = (noticia) => {
-    // Presidente Municipal não pode editar notícias nacionais
-    if (userRepresentante?.cargo === 'Presidente Municipal' && !noticia.estado && !noticia.cidade) {
-      toast.error('Apenas a matriz nacional pode editar notícias nacionais');
-      return;
-    }
-    
     setEditingNoticia(noticia);
     setFormData({
       titulo: noticia.titulo || '',
       resumo: noticia.resumo || '',
       conteudo: noticia.conteudo || '',
       imagem_url: noticia.imagem_url || '',
-      link_externo: noticia.link_externo || '',
       categoria: noticia.categoria || 'geral',
-      estado: noticia.estado || '',
-      cidade: noticia.cidade || '',
       destaque: noticia.destaque ?? false,
       ativo: noticia.ativo ?? true,
-      data_publicacao: noticia.data_publicacao || format(new Date(), 'yyyy-MM-dd'),
+      publicado_em: noticia.publicado_em ? format(new Date(noticia.publicado_em), 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'),
     });
     setDialogOpen(true);
   };
@@ -177,10 +153,26 @@ export default function AdminNoticias() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    console.log('=== handleSubmit ===');
+    console.log('formData:', formData);
+    
+    // Criar objeto limpo apenas com campos válidos
+    const cleanFormData = {
+      titulo: formData.titulo,
+      resumo: formData.resumo,
+      conteudo: formData.conteudo,
+      imagem_url: formData.imagem_url,
+      categoria: formData.categoria,
+      destaque: formData.destaque,
+      ativo: formData.ativo,
+      publicado_em: formData.publicado_em,
+    };
+    console.log('cleanFormData:', cleanFormData);
+    
     if (editingNoticia) {
-      updateMutation.mutate({ id: editingNoticia.id, data: formData });
+      updateMutation.mutate({ id: editingNoticia.id, data: cleanFormData });
     } else {
-      createMutation.mutate(formData);
+      createMutation.mutate(cleanFormData);
     }
   };
 
@@ -231,9 +223,6 @@ export default function AdminNoticias() {
       </AdminLayout>
     );
   }
-  
-  const isPresidenteMunicipal = userRepresentante?.cargo === 'Presidente Municipal';
-  const isAdminPuro = user?.role === 'admin' && !userRepresentante;
 
   return (
     <AdminLayout>
@@ -285,18 +274,10 @@ export default function AdminNoticias() {
                         <Badge className={categoriaColors[noticia.categoria]}>
                           {CATEGORIAS.find(c => c.value === noticia.categoria)?.label}
                         </Badge>
-                        {noticia.estado && noticia.cidade && (
-                          <Badge variant="outline" className="text-[#1e3a5f]">
-                            {noticia.cidade} - {noticia.estado}
-                          </Badge>
-                        )}
-                        {!noticia.estado && !noticia.cidade && (
-                          <Badge className="bg-[#d4af37] text-[#1e3a5f]">Nacional</Badge>
-                        )}
-                        {noticia.data_publicacao && (
+                        {noticia.publicado_em && (
                           <span className="flex items-center gap-1">
                             <Calendar className="w-3 h-3" />
-                            {format(new Date(noticia.data_publicacao), 'dd/MM/yyyy')}
+                            {format(new Date(noticia.publicado_em), 'dd/MM/yyyy')}
                           </span>
                         )}
                       </div>
@@ -306,7 +287,6 @@ export default function AdminNoticias() {
                         variant="ghost" 
                         size="icon" 
                         onClick={() => openEdit(noticia)}
-                        disabled={isPresidenteMunicipal && !noticia.estado && !noticia.cidade}
                       >
                         <Pencil className="w-4 h-4" />
                       </Button>
@@ -314,14 +294,7 @@ export default function AdminNoticias() {
                         variant="ghost"
                         size="icon"
                         className="text-red-600 hover:text-red-700"
-                        onClick={() => {
-                          if (isPresidenteMunicipal && !noticia.estado && !noticia.cidade) {
-                            toast.error('Apenas a matriz nacional pode excluir notícias nacionais');
-                            return;
-                          }
-                          deleteMutation.mutate(noticia.id);
-                        }}
-                        disabled={isPresidenteMunicipal && !noticia.estado && !noticia.cidade}
+                        onClick={() => deleteMutation.mutate(noticia.id)}
                       >
                         <Trash2 className="w-4 h-4" />
                       </Button>
@@ -394,52 +367,6 @@ export default function AdminNoticias() {
               </div>
             </div>
 
-            <div>
-              <Label>Link Externo (opcional)</Label>
-              <Input
-                value={formData.link_externo}
-                onChange={(e) => setFormData({ ...formData, link_externo: e.target.value })}
-                placeholder="https://..."
-              />
-            </div>
-
-            {/* Campos de Localização - apenas admin puro pode deixar vazio (nacional) */}
-            {isAdminPuro && (
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label>Estado (vazio = nacional)</Label>
-                  <Select
-                    value={formData.estado}
-                    onValueChange={(val) => setFormData({ ...formData, estado: val, cidade: '' })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Nacional" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value={null}>Nacional</SelectItem>
-                      {ESTADOS.map(uf => (
-                        <SelectItem key={uf} value={uf}>{uf}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label>Cidade</Label>
-                  <Input
-                    value={formData.cidade}
-                    onChange={(e) => setFormData({ ...formData, cidade: e.target.value })}
-                    placeholder="Deixe vazio para nacional"
-                    disabled={!formData.estado}
-                  />
-                </div>
-              </div>
-            )}
-            
-            {isPresidenteMunicipal && (
-              <div className="p-3 bg-blue-50 rounded-lg text-sm text-blue-700">
-                Esta notícia será exibida em: <strong>{userRepresentante.cidade} - {userRepresentante.estado}</strong>
-              </div>
-            )}
 
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -464,8 +391,8 @@ export default function AdminNoticias() {
                 <Label>Data de Publicação</Label>
                 <Input
                   type="date"
-                  value={formData.data_publicacao}
-                  onChange={(e) => setFormData({ ...formData, data_publicacao: e.target.value })}
+                  value={formData.publicado_em}
+                  onChange={(e) => setFormData({ ...formData, publicado_em: e.target.value })}
                 />
               </div>
             </div>

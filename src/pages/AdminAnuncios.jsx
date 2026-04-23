@@ -16,15 +16,10 @@ import { Plus, Pencil, Trash2, ExternalLink, Image as ImageIcon } from 'lucide-r
 import { toast } from 'sonner';
 
 const POSICOES = [
+  { value: 'home', label: 'Home' },
   { value: 'topo', label: 'Topo da Página' },
   { value: 'lateral', label: 'Lateral / Sidebar' },
   { value: 'rodape', label: 'Rodapé' },
-];
-
-const ESTADOS = [
-  'AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 
-  'MT', 'MS', 'MG', 'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN', 
-  'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO'
 ];
 
 export default function AdminAnuncios() {
@@ -34,14 +29,14 @@ export default function AdminAnuncios() {
   const user = authUser;
   const [formData, setFormData] = useState({
     titulo: '',
+    descricao: '',
     imagem_url: '',
-    link_destino: '',
-    posicao: 'lateral',
-    estado: '',
-    cidade: '',
-    nacional_controlado: false,
-    ativo: true,
+    link: '',
+    posicao: 'home',
     ordem: 0,
+    data_inicio: '',
+    data_fim: '',
+    ativo: true,
   });
 
   const queryClient = useQueryClient();
@@ -49,57 +44,70 @@ export default function AdminAnuncios() {
   // user e userRepresentante agora vêm do AuthContext
 
   const { data: anuncios, isLoading } = useQuery({
-    queryKey: ['admin-anuncios', loadingUser, userRepresentante?.id],
+    queryKey: ['admin-anuncios'],
     queryFn: async () => {
-      const { data: allAnuncios, error } = await supabase
+      const { data, error } = await supabase
         .from('anuncios')
         .select('*')
         .order('created_at', { ascending: false });
       if (error) throw error;
-      
-      // Se for representante Presidente Municipal, filtra por cidade
-      if (userRepresentante && userRepresentante.cargo === 'Presidente Municipal') {
-        // Mostra anúncios da sua cidade + nacionais não controlados
-        return (allAnuncios || []).filter(a => {
-          const isDaCidade = a.estado === userRepresentante.estado && 
-                             a.cidade === userRepresentante.cidade;
-          const isNacionalEditavel = (!a.estado && !a.cidade && !a.nacional_controlado);
-          return isDaCidade || isNacionalEditavel;
-        });
-      }
-      
-      // Admin puro vê tudo
-      return allAnuncios || [];
+      return data || [];
     },
-    enabled: !loadingUser,
   });
 
   const createMutation = useMutation({
     mutationFn: async (data) => {
-      const { error } = await supabase.from('anuncios').insert([data]);
+      console.log('=== createMutation.mutationFn ===');
+      // Converter strings vazias para null nas datas
+      const cleanData = {
+        ...data,
+        data_inicio: data.data_inicio || null,
+        data_fim: data.data_fim || null,
+      };
+      console.log('Dados a serem inseridos:', cleanData);
+      const { data: result, error } = await supabase.from('anuncios').insert([cleanData]).select();
+      console.log('Resultado do insert:', result);
+      console.log('Erro do insert:', error);
       if (error) throw error;
+      return result;
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
+      console.log('=== createMutation.onSuccess ===', result);
       queryClient.invalidateQueries({ queryKey: ['admin-anuncios'] });
       toast.success('Anúncio criado com sucesso!');
       closeDialog();
     },
     onError: (error) => {
+      console.error('=== createMutation.onError ===', error);
       toast.error('Erro ao criar anúncio: ' + error.message);
     },
   });
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }) => {
-      const { error } = await supabase.from('anuncios').update(data).eq('id', id);
+      console.log('=== updateMutation.mutationFn ===');
+      console.log('ID:', id);
+      // Converter strings vazias para null nas datas
+      const cleanData = {
+        ...data,
+        data_inicio: data.data_inicio || null,
+        data_fim: data.data_fim || null,
+      };
+      console.log('Dados a serem atualizados:', cleanData);
+      const { data: result, error } = await supabase.from('anuncios').update(cleanData).eq('id', id).select();
+      console.log('Resultado do update:', result);
+      console.log('Erro do update:', error);
       if (error) throw error;
+      return result;
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
+      console.log('=== updateMutation.onSuccess ===', result);
       queryClient.invalidateQueries({ queryKey: ['admin-anuncios'] });
       toast.success('Anúncio atualizado!');
       closeDialog();
     },
     onError: (error) => {
+      console.error('=== updateMutation.onError ===', error);
       toast.error('Erro ao atualizar: ' + error.message);
     },
   });
@@ -120,47 +128,32 @@ export default function AdminAnuncios() {
 
   const openCreate = () => {
     setEditingAnuncio(null);
-    // Se for Presidente Municipal, preenche automaticamente estado/cidade
-    const initialData = {
+    setFormData({
       titulo: '',
+      descricao: '',
       imagem_url: '',
-      link_destino: '',
-      posicao: 'lateral',
-      estado: '',
-      cidade: '',
-      nacional_controlado: false,
-      ativo: true,
+      link: '',
+      posicao: 'home',
       ordem: 0,
-    };
-    
-    if (userRepresentante?.cargo === 'Presidente Municipal') {
-      initialData.estado = userRepresentante.estado;
-      initialData.cidade = userRepresentante.cidade;
-    }
-    
-    setFormData(initialData);
+      data_inicio: '',
+      data_fim: '',
+      ativo: true,
+    });
     setDialogOpen(true);
   };
 
   const openEdit = (anuncio) => {
-    // Presidente Municipal não pode editar anúncios nacionais controlados
-    if (userRepresentante?.cargo === 'Presidente Municipal' && 
-        anuncio.nacional_controlado && !anuncio.estado && !anuncio.cidade) {
-      toast.error('Apenas a matriz nacional pode editar este anúncio');
-      return;
-    }
-    
     setEditingAnuncio(anuncio);
     setFormData({
       titulo: anuncio.titulo || '',
+      descricao: anuncio.descricao || '',
       imagem_url: anuncio.imagem_url || '',
-      link_destino: anuncio.link_destino || '',
-      posicao: anuncio.posicao || 'lateral',
-      estado: anuncio.estado || '',
-      cidade: anuncio.cidade || '',
-      nacional_controlado: anuncio.nacional_controlado || false,
-      ativo: anuncio.ativo ?? true,
+      link: anuncio.link || '',
+      posicao: anuncio.posicao || 'home',
       ordem: anuncio.ordem || 0,
+      data_inicio: anuncio.data_inicio || '',
+      data_fim: anuncio.data_fim || '',
+      ativo: anuncio.ativo ?? true,
     });
     setDialogOpen(true);
   };
@@ -170,18 +163,25 @@ export default function AdminAnuncios() {
     setEditingAnuncio(null);
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
+  const handleSubmit = () => {
+    console.log('=== handleSubmit iniciado ===');
+    console.log('formData:', formData);
+    console.log('editingAnuncio:', editingAnuncio);
     
-    // Validação: Presidente Municipal não pode marcar como nacional_controlado
-    if (userRepresentante?.cargo === 'Presidente Municipal' && formData.nacional_controlado) {
-      toast.error('Apenas a matriz nacional pode criar anúncios controlados');
+    // Validação básica
+    if (!formData.titulo || !formData.imagem_url) {
+      console.log('Validação falhou: título ou imagem vazios');
+      toast.error('Preencha o título e a imagem do anúncio');
       return;
     }
     
+    console.log('Validação passou, verificando mutation...');
+    
     if (editingAnuncio) {
+      console.log('Chamando updateMutation.mutate...');
       updateMutation.mutate({ id: editingAnuncio.id, data: formData });
     } else {
+      console.log('Chamando createMutation.mutate...');
       createMutation.mutate(formData);
     }
   };
@@ -227,8 +227,6 @@ export default function AdminAnuncios() {
     );
   }
   
-  const isPresidenteMunicipal = userRepresentante?.cargo === 'Presidente Municipal';
-  const isAdminPuro = user?.role === 'admin' && !userRepresentante;
 
   return (
     <AdminLayout>
@@ -271,19 +269,13 @@ export default function AdminAnuncios() {
                         <Badge variant={anuncio.ativo ? 'default' : 'secondary'}>
                           {anuncio.ativo ? 'Ativo' : 'Inativo'}
                         </Badge>
-                        {anuncio.nacional_controlado && (
-                          <Badge className="bg-[#d4af37] text-[#1e3a5f]">Nacional</Badge>
-                        )}
                       </div>
                       <div className="flex items-center gap-4 text-sm text-gray-500">
                         <span>Posição: {POSICOES.find(p => p.value === anuncio.posicao)?.label}</span>
                         <span>Ordem: {anuncio.ordem}</span>
-                        {anuncio.estado && anuncio.cidade && (
-                          <span className="text-[#1e3a5f] font-medium">{anuncio.cidade} - {anuncio.estado}</span>
-                        )}
-                        {anuncio.link_destino && (
+                        {anuncio.link && (
                           <a
-                            href={anuncio.link_destino}
+                            href={anuncio.link}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="flex items-center gap-1 text-blue-600 hover:underline"
@@ -299,7 +291,6 @@ export default function AdminAnuncios() {
                         variant="ghost" 
                         size="icon" 
                         onClick={() => openEdit(anuncio)}
-                        disabled={isPresidenteMunicipal && anuncio.nacional_controlado && !anuncio.estado}
                       >
                         <Pencil className="w-4 h-4" />
                       </Button>
@@ -307,14 +298,7 @@ export default function AdminAnuncios() {
                         variant="ghost"
                         size="icon"
                         className="text-red-600 hover:text-red-700"
-                        onClick={() => {
-                          if (isPresidenteMunicipal && anuncio.nacional_controlado && !anuncio.estado) {
-                            toast.error('Apenas a matriz nacional pode excluir este anúncio');
-                            return;
-                          }
-                          deleteMutation.mutate(anuncio.id);
-                        }}
-                        disabled={isPresidenteMunicipal && anuncio.nacional_controlado && !anuncio.estado}
+                        onClick={() => deleteMutation.mutate(anuncio.id)}
                       >
                         <Trash2 className="w-4 h-4" />
                       </Button>
@@ -332,9 +316,9 @@ export default function AdminAnuncios() {
           <DialogHeader>
             <DialogTitle>{editingAnuncio ? 'Editar Anúncio' : 'Novo Anúncio'}</DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form className="space-y-4">
             <div>
-              <Label>Título</Label>
+              <Label>Título *</Label>
               <Input
                 value={formData.titulo}
                 onChange={(e) => setFormData({ ...formData, titulo: e.target.value })}
@@ -344,7 +328,16 @@ export default function AdminAnuncios() {
             </div>
 
             <div>
-              <Label>Imagem</Label>
+              <Label>Descrição</Label>
+              <Input
+                value={formData.descricao}
+                onChange={(e) => setFormData({ ...formData, descricao: e.target.value })}
+                placeholder="Descrição do anúncio"
+              />
+            </div>
+
+            <div>
+              <Label>Imagem *</Label>
               <div className="space-y-2">
                 {formData.imagem_url && (
                   <img
@@ -367,51 +360,13 @@ export default function AdminAnuncios() {
             </div>
 
             <div>
-              <Label>Link de Destino</Label>
+              <Label>Link</Label>
               <Input
-                value={formData.link_destino}
-                onChange={(e) => setFormData({ ...formData, link_destino: e.target.value })}
+                value={formData.link}
+                onChange={(e) => setFormData({ ...formData, link: e.target.value })}
                 placeholder="https://..."
               />
             </div>
-
-            {/* Campos de Localização - apenas admin puro pode deixar vazio (nacional) */}
-            {isAdminPuro && (
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label>Estado (vazio = nacional)</Label>
-                  <Select
-                    value={formData.estado}
-                    onValueChange={(val) => setFormData({ ...formData, estado: val, cidade: '' })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Nacional" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value={null}>Nacional</SelectItem>
-                      {ESTADOS.map(uf => (
-                        <SelectItem key={uf} value={uf}>{uf}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label>Cidade</Label>
-                  <Input
-                    value={formData.cidade}
-                    onChange={(e) => setFormData({ ...formData, cidade: e.target.value })}
-                    placeholder="Deixe vazio para nacional"
-                    disabled={!formData.estado}
-                  />
-                </div>
-              </div>
-            )}
-            
-            {isPresidenteMunicipal && (
-              <div className="p-3 bg-blue-50 rounded-lg text-sm text-blue-700">
-                Este anúncio será exibido em: <strong>{userRepresentante.cidade} - {userRepresentante.estado}</strong>
-              </div>
-            )}
 
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -442,31 +397,43 @@ export default function AdminAnuncios() {
               </div>
             </div>
 
-            <div className="flex items-center gap-6">
-              <div className="flex items-center gap-2">
-                <Switch
-                  checked={formData.ativo}
-                  onCheckedChange={(val) => setFormData({ ...formData, ativo: val })}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Data Início</Label>
+                <Input
+                  type="date"
+                  value={formData.data_inicio}
+                  onChange={(e) => setFormData({ ...formData, data_inicio: e.target.value })}
                 />
-                <Label>Anúncio ativo</Label>
               </div>
-              
-              {isAdminPuro && !formData.estado && (
-                <div className="flex items-center gap-2">
-                  <Switch
-                    checked={formData.nacional_controlado}
-                    onCheckedChange={(val) => setFormData({ ...formData, nacional_controlado: val })}
-                  />
-                  <Label>Controlado pela matriz (bloqueia edição municipal)</Label>
-                </div>
-              )}
+              <div>
+                <Label>Data Fim</Label>
+                <Input
+                  type="date"
+                  value={formData.data_fim}
+                  onChange={(e) => setFormData({ ...formData, data_fim: e.target.value })}
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Switch
+                checked={formData.ativo}
+                onCheckedChange={(val) => setFormData({ ...formData, ativo: val })}
+              />
+              <Label>Anúncio ativo</Label>
             </div>
 
             <div className="flex justify-end gap-2">
               <Button type="button" variant="outline" onClick={closeDialog}>
                 Cancelar
               </Button>
-              <Button type="submit" className="bg-[#1e3a5f] hover:bg-[#152a45]">
+              <Button 
+                type="button" 
+                onClick={handleSubmit}
+                disabled={createMutation.isPending || updateMutation.isPending}
+                className="bg-[#1e3a5f] hover:bg-[#152a45]"
+              >
                 {editingAnuncio ? 'Salvar' : 'Criar'}
               </Button>
             </div>
