@@ -1,10 +1,20 @@
 import React, { useState, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useQuery } from '@tanstack/react-query';
-import { Shield, Search, Users, MapPin, Info, Heart } from 'lucide-react';
+import { 
+  Shield, 
+  Search, 
+  Users, 
+  MapPin, 
+  Info, 
+  Heart,
+  LogIn,
+  UserPlus,
+  ChevronRight,
+  Award
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
-import { createPageUrl } from '@/utils';
 import { toast } from 'sonner';
 import QuemSomosModal from '../components/public/QuemSomosModal';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -106,49 +116,81 @@ export default function Representantes() {
       {/* Modal Quem Somos */}
       <QuemSomosModal open={showQuemSomos} onOpenChange={setShowQuemSomos} />
 
-      {/* Header */}
-      <div className="bg-white pt-8 pb-16 px-4 border-b border-gray-200">
-        <div className="max-w-6xl mx-auto">
-          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-4">
-            <div className="flex items-center gap-3">
+      {/* Header - Mesmo layout da Landing Page */}
+      <header className="bg-white shadow-sm sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            {/* Logo */}
+            <Link to="/" className="flex items-center">
               <img 
-                src="https://media.base44.com/images/public/693099089062f3cc56b4fd72/9668af615_Designsemnome-2026-03-18T114619559.png" 
-                                alt="COBRELIC"
-                                className="h-48 w-auto object-contain"
+                src="/src/assets/logo.png" 
+                alt="COBRELIC" 
+                className="h-20 w-auto object-contain mr-3"
               />
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <Button 
-                onClick={() => setShowQuemSomos(true)}
-                variant="outline"
-                size="sm"
-                className="bg-[#1e3a5f]/10 border-[#1e3a5f]/30 text-[#1e3a5f] hover:bg-[#1e3a5f]/20 hover:text-[#1e3a5f]"
+              
+            </Link>
+            
+            {/* Navigation Pública */}
+            <nav className="hidden sm:flex items-center space-x-6">
+              <Link to="/" className="text-gray-700 hover:text-[#1e3a5f] font-medium transition-colors">
+                Home
+              </Link>
+              <Link to="/Sobre" className="text-gray-700 hover:text-[#1e3a5f] font-medium transition-colors">
+                Sobre
+              </Link>
+              <Link to="/Representantes" className="text-[#1e3a5f] font-semibold transition-colors">
+                Representantes
+              </Link>
+              <Link to="/Planos" className="text-gray-700 hover:text-[#1e3a5f] font-medium transition-colors">
+                Planos
+              </Link>
+              <Link to="/ClubeBeneficios" className="text-gray-700 hover:text-[#1e3a5f] font-medium transition-colors">
+                Clube de Benefícios
+              </Link>
+              <Link to="/Contato" className="text-gray-700 hover:text-[#1e3a5f] font-medium transition-colors">
+                Contato
+              </Link>
+            </nav>
+
+            {/* CTA Buttons - Apenas públicos */}
+            <div className="flex items-center space-x-3">
+              <Link 
+                to="/Login" 
+                className="flex items-center text-[#1e3a5f] hover:text-[#d4af37] font-medium transition-colors"
               >
-                <Info className="w-4 h-4 mr-2" />
-                Quem Somos
-              </Button>
-              <Button 
-                onClick={() => base44.auth.redirectToLogin()}
-                variant="outline"
-                size="sm"
-                className="bg-[#1e3a5f]/10 border-[#1e3a5f]/30 text-[#1e3a5f] hover:bg-[#1e3a5f]/20 hover:text-[#1e3a5f]"
+                <LogIn className="w-4 h-4 mr-1" />
+                Entrar
+              </Link>
+              <Link 
+                to="/Login?tab=cadastro" 
+                className="bg-[#1e3a5f] hover:bg-[#152a45] text-white px-5 py-2 rounded-lg font-medium transition-colors flex items-center"
               >
-                Fazer Login
-              </Button>
-              <Link to={createPageUrl('Cadastro')}>
-                <Button 
-                  size="sm"
-                  className="bg-[#d4af37] hover:bg-[#c4a030] text-[#1e3a5f] font-semibold"
-                >
-                  <Users className="w-4 h-4 mr-2" />
-                  Associar-se
-                </Button>
+                <UserPlus className="w-4 h-4 mr-2" />
+                Associe-se
               </Link>
             </div>
           </div>
-
         </div>
-      </div>
+      </header>
+
+      {/* Hero Section */}
+      <section className="bg-gradient-to-br from-[#1e3a5f] via-[#2a4a73] to-[#1e3a5f] text-white py-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center">
+            <div className="inline-flex items-center bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full mb-4">
+              <Award className="w-5 h-5 text-[#d4af37] mr-2" />
+              <span className="text-sm font-medium">Encontre representantes em todo o Brasil</span>
+            </div>
+            <h2 className="text-3xl lg:text-4xl font-bold mb-4">
+              Nossos <span className="text-[#d4af37]">Representantes</span>
+            </h2>
+            <p className="text-lg text-gray-300 max-w-2xl mx-auto">
+              Conecte-se com líderes comunitários em seu estado e cidade. 
+              Faça parte da maior rede de representação do Brasil.
+            </p>
+          </div>
+        </div>
+      </section>
 
       {/* Main Content */}
       <div className="max-w-6xl mx-auto px-4 -mt-8">
@@ -179,58 +221,7 @@ export default function Representantes() {
         {/* Banner rotativo de fotos */}
         <FotoBanner />
 
-        {/* Busca de Cidade */}
-        <div className="bg-gradient-to-r from-[#1e3a5f] to-[#2d5a8f] rounded-xl shadow-lg p-6 mb-6">
-          <div className="text-center mb-4">
-            <h2 className="text-white text-2xl font-bold">Selecione o estado e a cidade para ver conteúdo exclusivo da sua região</h2>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Select value={estadoFiltro} onValueChange={handleEstadoChange}>
-              <SelectTrigger className="bg-white text-gray-900 border-gray-300">
-                <SelectValue placeholder="Selecione o estado" />
-              </SelectTrigger>
-              <SelectContent className="bg-white border border-gray-300 shadow-lg z-[99999]" style={{ maxHeight: '240px', overflowY: 'auto' }}>
-                <SelectItem value="todos" className="text-gray-900 hover:bg-gray-100 cursor-pointer">Todos os estados</SelectItem>
-                {estados.map(estado => (
-                  <SelectItem key={estado} value={estado} className="text-gray-900 hover:bg-gray-100 cursor-pointer">{estado}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Select 
-              value={cidadeFiltro} 
-              onValueChange={setCidadeFiltro}
-              disabled={estadoFiltro === 'todos'}
-            >
-              <SelectTrigger className="bg-white text-gray-900 border-gray-300">
-                <SelectValue placeholder="Selecione a cidade" />
-              </SelectTrigger>
-              <SelectContent className="bg-white border border-gray-300 shadow-lg z-[99999]" style={{ maxHeight: '240px', overflowY: 'auto' }}>
-                <SelectItem value="todos" className="text-gray-900 hover:bg-gray-100 cursor-pointer">Todas as cidades</SelectItem>
-                {cidades.map(cidade => (
-                  <SelectItem key={cidade} value={cidade} className="text-gray-900 hover:bg-gray-100 cursor-pointer">{cidade}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Button
-              onClick={() => {
-                if (estadoFiltro !== 'todos' && cidadeFiltro !== 'todos') {
-                  window.location.href = createPageUrl('CidadeDetalhes') + `?estado=${estadoFiltro}&cidade=${cidadeFiltro}`;
-                } else {
-                  toast.error('Selecione um estado e uma cidade');
-                }
-              }}
-              disabled={estadoFiltro === 'todos' || cidadeFiltro === 'todos'}
-              className="bg-[#d4af37] hover:bg-[#c4a030] text-[#1e3a5f] font-bold"
-            >
-              <MapPin className="w-4 h-4 mr-2" />
-              Acessar Portal
-            </Button>
-          </div>
-        </div>
-
-        {/* Filtros */}
+        {/* Filtros de Representantes */}
         <div className="bg-white rounded-xl shadow-lg p-4 md:p-6 mb-6">
           <div className="flex items-center gap-2 mb-4">
             <Search className="w-5 h-5 text-[#1e3a5f]" />
@@ -347,7 +338,7 @@ export default function Representantes() {
               <p className="text-white text-lg md:text-xl max-w-3xl mx-auto leading-relaxed mb-6">
                 Agora como líder comunitário da COBRELIC você tem direito a um clube de benefícios, com telemedicina e descontos em mais de 30 mil estabelecimentos em todo Brasil.
               </p>
-              <Link to={createPageUrl('ClubeBeneficios')}>
+              <Link to="/ClubeBeneficios">
                 <Button className="bg-[#d4af37] hover:bg-[#c4a030] text-[#1e3a5f] font-bold text-lg px-8 py-3 h-auto">
                   Saiba Mais
                 </Button>
@@ -413,24 +404,59 @@ export default function Representantes() {
               </button>
             </div>
           </div>
-          </div>
+        </div>
       </div>
 
       {/* Footer */}
-      <div className="bg-[#1e3a5f] py-8 px-4 mt-8">
-        <div className="max-w-6xl mx-auto text-center">
-          <div className="flex items-center justify-center gap-2 mb-2">
-            <img 
-              src="https://media.base44.com/images/public/693099089062f3cc56b4fd72/9668af615_Designsemnome-2026-03-18T114619559.png" 
-              alt="COBRELIC"
-              className="h-14 w-auto object-contain"
-            />
+      <footer className="bg-gray-900 text-gray-400 py-12 mt-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid md:grid-cols-4 gap-8 mb-8">
+            <div>
+              <div className="flex items-center mb-4">
+                <img 
+                  src="/src/assets/logo.png" 
+                  alt="COBRELIC" 
+                  className="h-10 w-auto object-contain mr-2"
+                />
+                <span className="text-white font-bold">COBRELIC</span>
+              </div>
+              <p className="text-sm">
+                Confederação Brasileira de Líderes Comunitários
+              </p>
+            </div>
+            
+            <div>
+              <h4 className="text-white font-semibold mb-4">Links Rápidos</h4>
+              <ul className="space-y-2 text-sm">
+                <li><Link to="/Login" className="hover:text-white transition-colors">Login</Link></li>
+                <li><Link to="/Cadastro" className="hover:text-white transition-colors">Associar-se</Link></li>
+                <li><Link to="/Representantes" className="hover:text-white transition-colors">Representantes</Link></li>
+                <li><Link to="/Beneficios" className="hover:text-white transition-colors">Benefícios</Link></li>
+              </ul>
+            </div>
+            
+            <div>
+              <h4 className="text-white font-semibold mb-4">Informações</h4>
+              <ul className="space-y-2 text-sm">
+                <li><Link to="/Planos" className="hover:text-white transition-colors">Planos</Link></li>
+                <li><Link to="/VerificarCarteirinha" className="hover:text-white transition-colors">Verificar Carteirinha</Link></li>
+                <li><Link to="/admin/login" className="hover:text-white transition-colors">Área Administrativa</Link></li>
+              </ul>
+            </div>
+            
+            <div>
+              <h4 className="text-white font-semibold mb-4">Contato</h4>
+              <p className="text-sm">
+                Em breve: Central de atendimento
+              </p>
+            </div>
           </div>
-          <p className="text-white/60 text-sm">
-            Confederação Brasileira das Entidades e Lideranças Comunitárias
-          </p>
+          
+          <div className="border-t border-gray-800 pt-8 text-center text-sm">
+            <p>&copy; 2024 COBRELIC. Todos os direitos reservados.</p>
+          </div>
         </div>
-      </div>
+      </footer>
     </div>
   );
 }

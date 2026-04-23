@@ -32,19 +32,19 @@ const AuthenticatedApp = () => {
   return (
     <Routes>
       {/* Páginas públicas (não precisam de auth) */}
+      <Route path="/" element={<Pages.Home />} />
+      <Route path="/Home" element={<Pages.Home />} />
       <Route path="/Login" element={<Pages.Login />} />
       <Route path="/Cadastro" element={<Pages.Cadastro />} />
       <Route path="/VerificarCarteirinha" element={<Pages.VerificarCarteirinha />} />
       <Route path="/CidadeDetalhes" element={<Pages.CidadeDetalhes />} />
       <Route path="/Representantes" element={<Pages.Representantes />} />
+      <Route path="/Sobre" element={<Pages.Sobre />} />
+      <Route path="/Contato" element={<Pages.Contato />} />
+      <Route path="/Planos" element={<Pages.PlanosPublico />} />
       <Route path="/Beneficios" element={
         <LayoutWrapper currentPageName="Beneficios">
           <Pages.Beneficios />
-        </LayoutWrapper>
-      } />
-      <Route path="/Planos" element={
-        <LayoutWrapper currentPageName="Planos">
-          <Pages.Planos />
         </LayoutWrapper>
       } />
       <Route path="/admin/login" element={<Pages.AdminLogin />} />
@@ -65,20 +65,19 @@ const AuthenticatedApp = () => {
       <Route path="/admin/representantes" element={<Pages.AdminRepresentantes />} />
       <Route path="/admin/video-clube" element={<Pages.AdminVideoClube />} />
       
-      {/* Páginas protegidas (precisam de auth) */}
-      <Route path="/" element={
+      {/* Páginas protegidas (precisam de auth) - Dashboard e outras */}
+      <Route path="/Dashboard" element={
         isAuthenticated ? (
-          <LayoutWrapper currentPageName={mainPageKey}>
-            <MainPage />
+          <LayoutWrapper currentPageName="Dashboard">
+            <Pages.Dashboard />
           </LayoutWrapper>
         ) : (
           <Navigate to="/Login" replace />
         )
       } />
       {Object.entries(Pages).map(([path, Page]) => {
-        // Pular páginas já definidas como públicas
         // Pular páginas já definidas como públicas ou com rotas explícitas
-        const publicPages = ['Login', 'Cadastro', 'VerificarCarteirinha', 'CidadeDetalhes', 'Representantes', 'Beneficios', 'Planos'];
+        const publicPages = ['Home', 'Login', 'Cadastro', 'VerificarCarteirinha', 'CidadeDetalhes', 'Representantes', 'Beneficios', 'Planos', 'Contato', 'Sobre', 'PlanosPublico'];
         const adminPages = ['Admin', 'AdminLogin', 'AdminAprovacoes', 'AdminAprovarPresidentes', 'AdminAnuncios', 'AdminAssociados', 'AdminBeneficios', 'AdminCarteirinhas', 'AdminConfiguracoes', 'AdminDiretoria', 'AdminFinanceiro', 'AdminMinhaEquipe', 'AdminNoticias', 'AdminNotificacoes', 'AdminPlanos', 'AdminRepresentantes', 'AdminVideoClube'];
         if (publicPages.includes(path) || adminPages.includes(path)) {
           return null;

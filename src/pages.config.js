@@ -72,6 +72,9 @@ import CadastroPresidente from './pages/CadastroPresidente';
 import Carteirinha from './pages/Carteirinha';
 import CidadeDetalhes from './pages/CidadeDetalhes';
 import ClubeBeneficios from './pages/ClubeBeneficios';
+import Contato from './pages/Contato';
+import Sobre from './pages/Sobre';
+import PlanosPublico from './pages/PlanosPublico';
 import Dashboard from './pages/Dashboard';
 import Financeiro from './pages/Financeiro';
 import Home from './pages/Home';
@@ -111,6 +114,9 @@ export const PAGES = {
     "Carteirinha": Carteirinha,
     "CidadeDetalhes": CidadeDetalhes,
     "ClubeBeneficios": ClubeBeneficios,
+    "Contato": Contato,
+    "Sobre": Sobre,
+    "PlanosPublico": PlanosPublico,
     "Dashboard": Dashboard,
     "Financeiro": Financeiro,
     "Home": Home,

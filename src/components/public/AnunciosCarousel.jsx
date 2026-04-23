@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/lib/supabase';
 import { useQuery } from '@tanstack/react-query';
 import { ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -10,7 +10,16 @@ export default function AnunciosCarousel({ posicao = 'topo', estado, cidade, nac
   const { data: anuncios, isLoading } = useQuery({
     queryKey: ['anuncios', posicao, estado, cidade, nacional],
     queryFn: async () => {
-      const allAnuncios = await base44.entities.Anuncio.filter({ ativo: true, posicao });
+      const { data, error } = await supabase
+        .from('anuncios')
+        .select('*')
+        .eq('ativo', true)
+        .eq('posicao', posicao)
+        .order('ordem', { ascending: true });
+      
+      if (error) throw error;
+      
+      const allAnuncios = data || [];
       
       // Se nacional=true, retorna apenas anúncios nacionais
       if (nacional) {
@@ -47,8 +56,20 @@ export default function AnunciosCarousel({ posicao = 'topo', estado, cidade, nac
     return () => clearInterval(interval);
   }, [sortedAnuncios.length]);
 
-  if (isLoading || sortedAnuncios.length === 0) {
-    return null;
+  if (isLoading) {
+    return (
+      <div className="relative rounded-xl overflow-hidden bg-gray-100 h-32 md:h-40 animate-pulse">
+        <div className="w-full h-full bg-gray-200" />
+      </div>
+    );
+  }
+
+  if (sortedAnuncios.length === 0) {
+    return (
+      <div className="relative rounded-xl overflow-hidden bg-gradient-to-r from-[#1e3a5f]/10 to-[#2d5a8f]/10 h-32 md:h-40 flex items-center justify-center border-2 border-dashed border-[#1e3a5f]/20">
+        <span className="text-[#1e3a5f]/40 font-medium text-sm">Espaço para anúncio</span>
+      </div>
+    );
   }
 
   const currentAnuncio = sortedAnuncios[currentIndex];

@@ -1,5 +1,5 @@
 import React from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/lib/supabase';
 import { useQuery } from '@tanstack/react-query';
 import { Newspaper, Calendar, ExternalLink, ChevronRight } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
@@ -11,14 +11,21 @@ export default function NoticiasSection({ nacional = false }) {
   const { data: noticias, isLoading } = useQuery({
     queryKey: ['noticias-publicas', nacional],
     queryFn: async () => {
-      const allNoticias = await base44.entities.Noticia.filter({ ativo: true }, '-created_date', 20);
+      const { data, error } = await supabase
+        .from('noticias')
+        .select('*')
+        .eq('ativo', true)
+        .order('created_at', { ascending: false })
+        .limit(20);
       
-      // Se nacional=true, retorna apenas notícias nacionais
+      if (error) throw error;
+      
+      // Se nacional=true, retorna apenas notícias nacionais (sem estado/cidade)
       if (nacional) {
-        return allNoticias.filter(n => !n.estado && !n.cidade).slice(0, 6);
+        return (data || []).filter(n => !n.estado && !n.cidade).slice(0, 6);
       }
       
-      return allNoticias.slice(0, 6);
+      return (data || []).slice(0, 6);
     },
   });
 
