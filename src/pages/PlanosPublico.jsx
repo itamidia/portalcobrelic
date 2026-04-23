@@ -72,7 +72,7 @@ export default function PlanosPublico() {
             {/* Logo */}
             <Link to="/" className="flex items-center">
               <img 
-                src="/src/assets/logo.png" 
+                src="/logo.png" 
                 alt="COBRELIC" 
                 className="h-20 w-auto object-contain mr-3"
               />
@@ -268,7 +268,7 @@ export default function PlanosPublico() {
             <div>
               <div className="flex items-center mb-4">
                 <img 
-                  src="/src/assets/logo.png" 
+                  src="/logo.png" 
                   alt="COBRELIC" 
                   className="h-10 w-auto object-contain mr-2"
                 />

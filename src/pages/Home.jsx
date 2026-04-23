@@ -24,7 +24,7 @@ export default function Home() {
             {/* Logo */}
             <Link to="/" className="flex items-center">
               <img 
-                src="/src/assets/logo.png" 
+                src="/logo.png" 
                 alt="COBRELIC" 
                 className="h-20 w-auto object-contain mr-3"
               />
