@@ -303,11 +303,11 @@ export default function Home() {
             <div>
               <div className="flex items-center mb-4">
                 <img 
-                  src="/src/assets/logo.png" 
+                  src="/logo.png" 
                   alt="COBRELIC" 
-                  className="h-10 w-auto object-contain mr-2"
+                  className="h-13 w-auto object-contain mr-2"
                 />
-                <span className="text-white font-bold">COBRELIC</span>
+                
               </div>
               <p className="text-sm">
                 Confederação Brasileira de Líderes Comunitários
