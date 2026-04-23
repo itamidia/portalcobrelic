@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { supabase } from '@/lib/supabase';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -18,13 +18,32 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Wallet, CheckCircle, Clock, AlertTriangle, TrendingUp } from 'lucide-react';
+import { Wallet, CheckCircle, Clock, AlertTriangle, TrendingUp, Eye, Edit, Trash2, Save, X } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 export default function AdminFinanceiro() {
+  const queryClient = useQueryClient();
   const [statusFilter, setStatusFilter] = useState('all');
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [selectedPagamento, setSelectedPagamento] = useState(null);
+  const [editForm, setEditForm] = useState({
+    status: 'pendente',
+    data_pagamento: '',
+    metodo_pagamento: '',
+    valor: 0
+  });
 
   const { data: pagamentos, isLoading: loadingPagamentos } = useQuery({
     queryKey: ['admin-pagamentos-all'],
@@ -42,7 +61,7 @@ export default function AdminFinanceiro() {
     queryKey: ['admin-associados-fin'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('representantes')
+        .from('associados')
         .select('*');
       if (error) throw error;
       return data || [];
@@ -53,11 +72,47 @@ export default function AdminFinanceiro() {
     acc[a.id] = a;
     return acc;
   }, {}) || {};
-  
-  // Map associado_id to nome for display
-  const getAssociadoNome = (associadoId) => {
-    const associado = associadosMap[associadoId];
-    return associado?.nome || 'Não encontrado';
+
+  // Mutation para atualizar pagamento
+  const updatePagamentoMutation = useMutation({
+    mutationFn: async ({ id, data }) => {
+      const { error } = await supabase
+        .from('pagamentos')
+        .update(data)
+        .eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-pagamentos-all'] });
+      setEditModalOpen(false);
+      alert('Pagamento atualizado com sucesso!');
+    },
+    onError: (error) => {
+      alert('Erro ao atualizar: ' + error.message);
+    },
+  });
+
+  const handleEditClick = (pagamento) => {
+    setSelectedPagamento(pagamento);
+    setEditForm({
+      status: pagamento.status || 'pendente',
+      data_pagamento: pagamento.data_pagamento ? pagamento.data_pagamento.split('T')[0] : '',
+      metodo_pagamento: pagamento.metodo_pagamento || '',
+      valor: pagamento.valor || 0
+    });
+    setEditModalOpen(true);
+  };
+
+  const handleSaveEdit = () => {
+    const updateData = {
+      status: editForm.status,
+      metodo_pagamento: editForm.metodo_pagamento,
+      valor: parseFloat(editForm.valor)
+    };
+    if (editForm.data_pagamento) {
+      updateData.data_pagamento = editForm.data_pagamento;
+    }
+    updatePagamentoMutation.mutate({ id: selectedPagamento.id, data: updateData });
   };
 
   const filteredPagamentos = pagamentos?.filter(p => 
@@ -166,6 +221,7 @@ export default function AdminFinanceiro() {
                   <TableHead>Pagamento</TableHead>
                   <TableHead>Método</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -190,8 +246,8 @@ export default function AdminFinanceiro() {
                     </TableCell>
                     <TableCell>
                       <span className={`px-3 py-1 text-xs rounded-full font-medium ${
-                        pagamento.status === 'confirmado' 
-                          ? 'bg-emerald-100 text-emerald-700' 
+                        pagamento.status === 'confirmado'
+                          ? 'bg-emerald-100 text-emerald-700'
                           : pagamento.status === 'atrasado'
                             ? 'bg-red-100 text-red-700'
                             : pagamento.status === 'cancelado'
@@ -201,11 +257,24 @@ export default function AdminFinanceiro() {
                         {pagamento.status}
                       </span>
                     </TableCell>
+                    <TableCell>
+                      <div className="flex gap-1">
+                        <Button variant="ghost" size="sm" onClick={() => alert('Ver detalhes: ' + pagamento.id)}>
+                          <Eye className="w-4 h-4" />
+                        </Button>
+                        <Button variant="ghost" size="sm" onClick={() => handleEditClick(pagamento)}>
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button variant="ghost" size="sm" className="text-red-500" onClick={() => alert('Excluir: ' + pagamento.id)}>
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
                   </TableRow>
                 ))}
                 {(!filteredPagamentos || filteredPagamentos.length === 0) && (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-gray-500">
+                    <TableCell colSpan={7} className="text-center py-8 text-gray-500">
                       Nenhum pagamento encontrado
                     </TableCell>
                   </TableRow>
@@ -215,6 +284,70 @@ export default function AdminFinanceiro() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Modal de Edição */}
+      <Dialog open={editModalOpen} onOpenChange={setEditModalOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Editar Pagamento</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div>
+              <Label>Status</Label>
+              <Select
+                value={editForm.status}
+                onValueChange={(v) => setEditForm({ ...editForm, status: v })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pendente">Pendente</SelectItem>
+                  <SelectItem value="pago">Pago</SelectItem>
+                  <SelectItem value="confirmado">Confirmado</SelectItem>
+                  <SelectItem value="atrasado">Atrasado</SelectItem>
+                  <SelectItem value="cancelado">Cancelado</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Valor (R$)</Label>
+              <Input
+                type="number"
+                step="0.01"
+                value={editForm.valor}
+                onChange={(e) => setEditForm({ ...editForm, valor: e.target.value })}
+              />
+            </div>
+            <div>
+              <Label>Data do Pagamento</Label>
+              <Input
+                type="date"
+                value={editForm.data_pagamento}
+                onChange={(e) => setEditForm({ ...editForm, data_pagamento: e.target.value })}
+              />
+            </div>
+            <div>
+              <Label>Método de Pagamento</Label>
+              <Input
+                value={editForm.metodo_pagamento}
+                onChange={(e) => setEditForm({ ...editForm, metodo_pagamento: e.target.value })}
+                placeholder="Ex: Cartão, Boleto, PIX"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditModalOpen(false)}>
+              <X className="w-4 h-4 mr-2" />
+              Cancelar
+            </Button>
+            <Button onClick={handleSaveEdit} disabled={updatePagamentoMutation.isPending}>
+              <Save className="w-4 h-4 mr-2" />
+              {updatePagamentoMutation.isPending ? 'Salvando...' : 'Salvar'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AdminLayout>
   );
 }

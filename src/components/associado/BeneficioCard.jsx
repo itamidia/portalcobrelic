@@ -1,7 +1,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { ExternalLink, Check, Lock, Gift, Heart, Wallet, GraduationCap, ShoppingBag, Stethoscope } from 'lucide-react';
+import { ExternalLink, Check, Gift, Heart, Wallet, GraduationCap, ShoppingBag, Stethoscope } from 'lucide-react';
 
 const iconMap = {
   Gift: Gift,
@@ -24,8 +24,8 @@ export default function BeneficioCard({ beneficio, isAtivo }) {
   return (
     <Card className={`overflow-hidden transition-all duration-300 ${
       isAtivo 
-        ? 'hover:shadow-lg cursor-pointer' 
-        : 'opacity-75'
+        ? 'hover:shadow-lg' 
+        : 'opacity-75 grayscale'
     }`}>
       <CardContent className="p-0">
         {/* Header with gradient */}
@@ -53,30 +53,18 @@ export default function BeneficioCard({ beneficio, isAtivo }) {
           ))}
         </div>
 
-        {/* Action button */}
-        <div className="px-6 pb-6">
-          <Button
-            onClick={handleClick}
-            disabled={!isAtivo}
-            className={`w-full h-12 text-base font-semibold ${
-              isAtivo
-                ? 'bg-[#d4af37] hover:bg-[#c9a432] text-[#1e3a5f]'
-                : 'bg-gray-200 text-gray-500'
-            }`}
-          >
-            {isAtivo ? (
-              <>
-                Acessar Benefício
-                <ExternalLink className="w-4 h-4 ml-2" />
-              </>
-            ) : (
-              <>
-                <Lock className="w-4 h-4 mr-2" />
-                Assinatura Necessária
-              </>
-            )}
-          </Button>
-        </div>
+        {/* Action button - apenas quando ativo */}
+        {isAtivo && (
+          <div className="px-6 pb-6">
+            <Button
+              onClick={handleClick}
+              className="w-full h-12 text-base font-semibold bg-[#d4af37] hover:bg-[#c9a432] text-[#1e3a5f]"
+            >
+              Acessar Benefício
+              <ExternalLink className="w-4 h-4 ml-2" />
+            </Button>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

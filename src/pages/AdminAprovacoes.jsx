@@ -37,8 +37,7 @@ import {
   Clock,
   Search,
   UserCheck,
-  Loader2,
-  CalendarDays
+  Loader2
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -62,11 +61,11 @@ export default function AdminAprovacoes() {
     biografia: '',
   });
 
-  const [aba, setAba] = useState('pendentes');
+  const [aba, setAba] = useState('aguardando');
 
-  // Buscar todos os representantes pendentes
-  const { data: associadosPendentes = [], isLoading } = useQuery({
-    queryKey: ['representantes-pendentes'],
+  // Buscar representantes aguardando aprovação (pendentes)
+  const { data: associadosAguardando = [], isLoading: loadingAguardando } = useQuery({
+    queryKey: ['representantes-aguardando'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('representantes')
@@ -78,42 +77,119 @@ export default function AdminAprovacoes() {
     },
   });
 
-  // Buscar cadastros recentes (todos, ordenados por data)
-  const { data: todosAssociados = [], isLoading: isLoadingRecentes } = useQuery({
-    queryKey: ['representantes-recentes'],
+  // Buscar representantes aprovados
+  const { data: associadosAprovados = [], isLoading: loadingAprovados } = useQuery({
+    queryKey: ['representantes-aprovados'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('representantes')
         .select('*')
-        .order('created_at', { ascending: false })
-        .limit(50);
+        .eq('status_aprovacao', 'aprovado')
+        .order('created_at', { ascending: false });
       if (error) throw error;
       return data || [];
     },
   });
 
-  // Filtrar os cadastros dos últimos 7 dias
-  const seteDiasAtras = new Date();
-  seteDiasAtras.setDate(seteDiasAtras.getDate() - 7);
-  const associadosRecentes = todosAssociados.filter(a => 
-    a.created_at && new Date(a.created_at) >= seteDiasAtras
-  );
-
-  // Mutation para aprovar
+  // Mutation para aprovar cadastro de representante e criar associado/pagamento
   const aprovarMutation = useMutation({
-    mutationFn: async (id) => {
-      const { error } = await supabase
+    mutationFn: async (representante) => {
+      console.log('Aprovando representante:', representante);
+
+      // 1. Aprovar representante
+      const { data: repData, error: repError } = await supabase
         .from('representantes')
         .update({ status_aprovacao: 'aprovado', ativo: true, updated_at: new Date().toISOString() })
-        .eq('id', id);
-      if (error) throw error;
+        .eq('id', representante.id)
+        .select()
+        .single();
+
+      if (repError) {
+        console.error('Erro ao aprovar representante:', repError);
+        throw repError;
+      }
+
+      console.log('Representante aprovado:', repData);
+
+      // 2. Buscar plano ativo
+      const { data: planoData, error: planoError } = await supabase
+        .from('planos')
+        .select('id, valor')
+        .eq('ativo', true)
+        .order('ordem')
+        .limit(1)
+        .single();
+
+      if (planoError && planoError.code !== 'PGRST116') {
+        console.error('Erro ao buscar plano:', planoError);
+      }
+
+      const planoId = planoData?.id || null;
+      const planoValor = planoData?.valor || 30.00;
+      console.log('Plano encontrado:', planoId, planoValor);
+
+      // 3. Criar associado
+      const { data: associadoData, error: associadoError } = await supabase
+        .from('associados')
+        .insert({
+          nome_completo: representante.nome,
+          email: representante.email,
+          telefone: representante.telefone,
+          cpf: representante.cpf,
+          representante_id: representante.id,
+          status_aprovacao: 'aprovado',
+          status_assinatura: 'ativo',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .select()
+        .single();
+
+      if (associadoError) {
+        console.error('Erro ao criar associado:', associadoError);
+        throw associadoError;
+      }
+
+      console.log('Associado criado:', associadoData);
+
+      // 4. Calcular data de vencimento (dia 5 do próximo mês)
+      const hoje = new Date();
+      const proximoMes = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 5);
+      const dataVencimento = proximoMes.toISOString().split('T')[0];
+
+      // 5. Criar pagamento
+      const { data: pagamentoData, error: pagamentoError } = await supabase
+        .from('pagamentos')
+        .insert({
+          associado_id: associadoData.id,
+          valor: planoValor,
+          status: 'pendente',
+          data_vencimento: dataVencimento,
+          descricao: 'Mensalidade - ' + new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }),
+          created_at: new Date().toISOString()
+        })
+        .select()
+        .single();
+
+      if (pagamentoError) {
+        console.error('Erro ao criar pagamento:', pagamentoError);
+        throw pagamentoError;
+      }
+
+      console.log('Pagamento criado:', pagamentoData);
+
+      return { representante: repData, associado: associadoData, pagamento: pagamentoData };
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['representantes-pendentes'] });
-      queryClient.invalidateQueries({ queryKey: ['representantes-recentes'] });
-      toast.success('Cadastro aprovado com sucesso!');
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['representantes-aguardando'] });
+      queryClient.invalidateQueries({ queryKey: ['representantes-aprovados'] });
+      toast.success(`Cadastro aprovado! Associado e pagamento criados.`);
+      console.log('Dados criados:', data);
     },
-    onError: (error) => toast.error('Erro ao aprovar cadastro: ' + error.message),
+    onError: (error) => {
+      console.error('Erro completo:', error);
+      toast.error('Erro ao aprovar cadastro: ' + error.message);
+    },
   });
 
   // Mutation para rejeitar
@@ -126,8 +202,8 @@ export default function AdminAprovacoes() {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['representantes-pendentes'] });
-      queryClient.invalidateQueries({ queryKey: ['representantes-recentes'] });
+      queryClient.invalidateQueries({ queryKey: ['representantes-aguardando'] });
+      queryClient.invalidateQueries({ queryKey: ['representantes-aprovados'] });
       toast.success('Cadastro rejeitado!');
     },
     onError: (error) => toast.error('Erro ao rejeitar cadastro: ' + error.message),
@@ -143,8 +219,8 @@ export default function AdminAprovacoes() {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['representantes-pendentes'] });
-      queryClient.invalidateQueries({ queryKey: ['representantes-recentes'] });
+      queryClient.invalidateQueries({ queryKey: ['representantes-aguardando'] });
+      queryClient.invalidateQueries({ queryKey: ['representantes-aprovados'] });
       setEditDialog({ open: false, associado: null });
       toast.success('Cadastro atualizado!');
     },
@@ -161,8 +237,8 @@ export default function AdminAprovacoes() {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['representantes-pendentes'] });
-      queryClient.invalidateQueries({ queryKey: ['representantes-recentes'] });
+      queryClient.invalidateQueries({ queryKey: ['representantes-aguardando'] });
+      queryClient.invalidateQueries({ queryKey: ['representantes-aprovados'] });
       setDeleteDialog({ open: false, associado: null });
       toast.success('Cadastro excluído!');
     },
@@ -210,10 +286,21 @@ export default function AdminAprovacoes() {
     rejeitado: { label: 'Rejeitado', color: 'bg-red-100 text-red-800' },
   };
 
-  // Filtrar por busca
-  const listaAtual = aba === 'pendentes' ? associadosPendentes : associadosRecentes;
+  // Filtrar por busca de acordo com a aba ativa
+  const getListaAtual = () => {
+    switch (aba) {
+      case 'aguardando':
+        return associadosAguardando;
+      case 'aprovados':
+        return associadosAprovados;
+      default:
+        return associadosAguardando;
+    }
+  };
+  
+  const listaAtual = getListaAtual();
   const associadosFiltrados = listaAtual.filter(a => 
-    a.nome_completo?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    a.nome?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     a.cpf?.includes(searchTerm) ||
     a.email?.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -223,43 +310,43 @@ export default function AdminAprovacoes() {
       <div className="p-6">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-gray-800">Aprovação de Cadastros</h1>
-            <p className="text-gray-500">Gerencie os cadastros pendentes de aprovação</p>
+            <h1 className="text-2xl font-bold text-gray-800">Aprovações</h1>
+            <p className="text-gray-500">Gerencie cadastros pendentes e aprovações de pagamento de planos</p>
           </div>
           <Badge className="bg-yellow-100 text-yellow-800 text-lg px-4 py-2">
             <Clock className="w-4 h-4 mr-2" />
-            {associadosPendentes.length} pendentes
+            {associadosAguardando.length} aguardando
           </Badge>
         </div>
 
         {/* Abas */}
         <div className="flex gap-2 mb-6">
           <button
-            onClick={() => setAba('pendentes')}
+            onClick={() => setAba('aguardando')}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
-              aba === 'pendentes'
+              aba === 'aguardando'
                 ? 'bg-[#1e3a5f] text-white'
                 : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
             }`}
           >
             <Clock className="w-4 h-4" />
-            Pendentes de Aprovação
-            <span className={`ml-1 px-2 py-0.5 rounded-full text-xs font-bold ${aba === 'pendentes' ? 'bg-white/20 text-white' : 'bg-yellow-100 text-yellow-800'}`}>
-              {associadosPendentes.length}
+            Aguardando Aprovação
+            <span className={`ml-1 px-2 py-0.5 rounded-full text-xs font-bold ${aba === 'aguardando' ? 'bg-white/20 text-white' : 'bg-yellow-100 text-yellow-800'}`}>
+              {associadosAguardando.length}
             </span>
           </button>
           <button
-            onClick={() => setAba('recentes')}
+            onClick={() => setAba('aprovados')}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
-              aba === 'recentes'
+              aba === 'aprovados'
                 ? 'bg-[#1e3a5f] text-white'
                 : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
             }`}
           >
-            <CalendarDays className="w-4 h-4" />
-            Cadastros Recentes (7 dias)
-            <span className={`ml-1 px-2 py-0.5 rounded-full text-xs font-bold ${aba === 'recentes' ? 'bg-white/20 text-white' : 'bg-blue-100 text-blue-800'}`}>
-              {associadosRecentes.length}
+            <CheckCircle className="w-4 h-4" />
+            Aprovados
+            <span className={`ml-1 px-2 py-0.5 rounded-full text-xs font-bold ${aba === 'aprovados' ? 'bg-white/20 text-white' : 'bg-green-100 text-green-800'}`}>
+              {associadosAprovados.length}
             </span>
           </button>
         </div>
@@ -278,7 +365,7 @@ export default function AdminAprovacoes() {
         </div>
 
         {/* Lista de Cadastros */}
-        {(isLoading || isLoadingRecentes) ? (
+        {(loadingAguardando || loadingAprovados) ? (
           <div className="grid gap-4">
             {[1, 2, 3].map(i => (
               <Skeleton key={i} className="h-40 rounded-xl" />
@@ -287,13 +374,13 @@ export default function AdminAprovacoes() {
         ) : associadosFiltrados.length === 0 ? (
           <Card className="border-0 shadow-sm">
             <CardContent className="py-16 text-center">
-            <UserCheck className="w-16 h-16 text-green-300 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-gray-600 mb-2">
-              {aba === 'pendentes' ? 'Nenhum cadastro pendente' : 'Nenhum cadastro recente'}
-            </h3>
-            <p className="text-gray-500">
-              {aba === 'pendentes' ? 'Todos os cadastros foram processados.' : 'Nenhum cadastro nos últimos 7 dias.'}
-            </p>
+              <UserCheck className="w-16 h-16 text-green-300 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-gray-600 mb-2">
+                {aba === 'aguardando' ? 'Nenhum cadastro aguardando' : 'Nenhum cadastro aprovado'}
+              </h3>
+              <p className="text-gray-500">
+                {aba === 'aguardando' ? 'Todos os cadastros foram processados.' : 'Nenhum cadastro aprovado ainda.'}
+              </p>
             </CardContent>
           </Card>
         ) : (
@@ -311,7 +398,7 @@ export default function AdminAprovacoes() {
                         <div>
                           <div className="flex items-center gap-2">
                             <h3 className="font-bold text-lg text-gray-800">{associado.nome}</h3>
-                            {aba === 'recentes' && associado.status_aprovacao && (
+                            {associado.status_aprovacao && (
                               <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${statusLabel[associado.status_aprovacao]?.color}`}>
                                 {statusLabel[associado.status_aprovacao]?.label}
                               </span>
@@ -350,38 +437,66 @@ export default function AdminAprovacoes() {
 
                     {/* Ações */}
                     <div className="flex flex-wrap gap-2">
-                      <Button
-                        onClick={() => aprovarMutation.mutate(associado.id)}
-                        disabled={aprovarMutation.isPending || associado.status_aprovacao === 'aprovado'}
-                        className={associado.status_aprovacao === 'aprovado' 
-                          ? 'bg-green-100 text-green-700 cursor-not-allowed' 
-                          : 'bg-green-600 hover:bg-green-700 text-white'}
-                      >
-                        {aprovarMutation.isPending ? (
-                          <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                        ) : associado.status_aprovacao === 'aprovado' ? (
-                          <CheckCircle className="w-4 h-4 mr-2" />
-                        ) : (
-                          <CheckCircle className="w-4 h-4 mr-2" />
-                        )}
-                        {associado.status_aprovacao === 'aprovado' ? 'Ativado' : 'Ativar'}
-                      </Button>
-                      <Button
-                        onClick={() => handleOpenEdit(associado)}
-                        variant="outline"
-                        className="border-[#1e3a5f] text-[#1e3a5f]"
-                      >
-                        <Pencil className="w-4 h-4 mr-2" />
-                        Editar
-                      </Button>
-                      <Button
-                        onClick={() => setDeleteDialog({ open: true, associado })}
-                        variant="outline"
-                        className="border-red-500 text-red-500 hover:bg-red-50"
-                      >
-                        <Trash2 className="w-4 h-4 mr-2" />
-                        Excluir
-                      </Button>
+                      {aba === 'aguardando' ? (
+                        // Ações para aguardando aprovação
+                        <>
+                          <Button
+                            onClick={() => aprovarMutation.mutate(associado)}
+                            disabled={aprovarMutation.isPending}
+                            className='bg-green-600 hover:bg-green-700 text-white'
+                          >
+                            {aprovarMutation.isPending ? (
+                              <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                            ) : (
+                              <CheckCircle className="w-4 h-4 mr-2" />
+                            )}
+                            Aprovar Cadastro
+                          </Button>
+                          <Button
+                            onClick={() => handleOpenEdit(associado)}
+                            variant="outline"
+                            className="border-[#1e3a5f] text-[#1e3a5f]"
+                          >
+                            <Pencil className="w-4 h-4 mr-2" />
+                            Editar
+                          </Button>
+                          <Button
+                            onClick={() => setDeleteDialog({ open: true, associado })}
+                            variant="outline"
+                            className="border-red-500 text-red-500 hover:bg-red-50"
+                          >
+                            <Trash2 className="w-4 h-4 mr-2" />
+                            Excluir
+                          </Button>
+                        </>
+                      ) : (
+                        // Ações para aprovados - apenas editar e excluir
+                        <>
+                          <Button
+                            disabled
+                            className='bg-green-100 text-green-700 cursor-not-allowed'
+                          >
+                            <CheckCircle className="w-4 h-4 mr-2" />
+                            Aprovado
+                          </Button>
+                          <Button
+                            onClick={() => handleOpenEdit(associado)}
+                            variant="outline"
+                            className="border-[#1e3a5f] text-[#1e3a5f]"
+                          >
+                            <Pencil className="w-4 h-4 mr-2" />
+                            Editar
+                          </Button>
+                          <Button
+                            onClick={() => setDeleteDialog({ open: true, associado })}
+                            variant="outline"
+                            className="border-red-500 text-red-500 hover:bg-red-50"
+                          >
+                            <Trash2 className="w-4 h-4 mr-2" />
+                            Excluir
+                          </Button>
+                        </>
+                      )}
                     </div>
                   </div>
                 </CardContent>

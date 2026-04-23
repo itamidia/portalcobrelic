@@ -14,7 +14,8 @@ import {
   Megaphone,
   Newspaper,
   ClipboardCheck,
-  Video
+  Video,
+  Package
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
@@ -34,6 +35,7 @@ const adminRoutes = {
   'AdminNoticias': '/admin/noticias',
   'AdminVideoClube': '/admin/video-clube',
   'AdminNotificacoes': '/admin/notificacoes',
+  'AdminPlanos': '/admin/planos',
   'AdminConfiguracoes': '/admin/configuracoes',
 };
 
@@ -47,6 +49,7 @@ const menuItems = [
   { name: 'Representantes', icon: UserCheck, page: 'AdminRepresentantes' },
   { name: 'Financeiro', icon: Wallet, page: 'AdminFinanceiro' },
   { name: 'Benefícios', icon: Gift, page: 'AdminBeneficios' },
+  { name: 'Planos', icon: Package, page: 'AdminPlanos' },
   { name: 'Carteirinhas', icon: CreditCard, page: 'AdminCarteirinhas' },
   { name: 'Anúncios', icon: Megaphone, page: 'AdminAnuncios' },
   { name: 'Notícias', icon: Newspaper, page: 'AdminNoticias' },

@@ -61,6 +61,7 @@ import AdminLogin from './pages/AdminLogin';
 import AdminMinhaEquipe from './pages/AdminMinhaEquipe';
 import AdminNoticias from './pages/AdminNoticias';
 import AdminNotificacoes from './pages/AdminNotificacoes';
+import AdminPlanos from './pages/AdminPlanos';
 import AdminRepresentantes from './pages/AdminRepresentantes';
 import AdminVideoClube from './pages/AdminVideoClube';
 import Beneficios from './pages/Beneficios';
@@ -72,9 +73,11 @@ import Carteirinha from './pages/Carteirinha';
 import CidadeDetalhes from './pages/CidadeDetalhes';
 import ClubeBeneficios from './pages/ClubeBeneficios';
 import Dashboard from './pages/Dashboard';
+import Financeiro from './pages/Financeiro';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Perfil from './pages/Perfil';
+import Planos from './pages/Planos';
 import VerificarCarteirinha from './pages/VerificarCarteirinha';
 import Representantes from './pages/Representantes';
 import __Layout from './Layout.jsx';
@@ -95,6 +98,7 @@ export const PAGES = {
     "AdminMinhaEquipe": AdminMinhaEquipe,
     "AdminNoticias": AdminNoticias,
     "AdminNotificacoes": AdminNotificacoes,
+    "AdminPlanos": AdminPlanos,
     "AdminRepresentantes": AdminRepresentantes,
     "AdminVideoClube": AdminVideoClube,
     "Beneficios": Beneficios,
@@ -106,9 +110,11 @@ export const PAGES = {
     "CidadeDetalhes": CidadeDetalhes,
     "ClubeBeneficios": ClubeBeneficios,
     "Dashboard": Dashboard,
+    "Financeiro": Financeiro,
     "Home": Home,
     "Login": Login,
     "Perfil": Perfil,
+    "Planos": Planos,
     "VerificarCarteirinha": VerificarCarteirinha,
     "Representantes": Representantes,
 }

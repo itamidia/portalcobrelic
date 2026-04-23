@@ -1,12 +1,14 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useAuth } from '@/lib/AuthContext';
 import { supabase, Functions } from '@/api/supabaseApi';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Gift, Lock, Loader2, ExternalLink } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Gift, Lock, Loader2, ExternalLink, Package, Check, ChevronRight } from 'lucide-react';
 import BeneficioCard from '../components/associado/BeneficioCard';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from 'sonner';
+import { Link } from 'react-router-dom';
 
 export default function Beneficios() {
   const { user } = useAuth();
@@ -58,6 +60,50 @@ export default function Beneficios() {
 
   const temAssinatura = associado?.status_assinatura === 'ativo';
   const aguardandoPagamento = associado?.status_assinatura === 'aguardando_pagamento';
+
+  // Buscar plano ativo do usuário
+  const { data: planoAtivo, isLoading: loadingPlano } = useQuery({
+    queryKey: ['plano-ativo-beneficios', associado?.plano_id],
+    queryFn: async () => {
+      if (!associado?.plano_id) return null;
+      const { data, error } = await supabase
+        .from('planos')
+        .select('*')
+        .eq('id', associado.plano_id)
+        .eq('ativo', true)
+        .single();
+      if (error && error.code !== 'PGRST116') throw error;
+      return data;
+    },
+    enabled: !!associado?.plano_id,
+  });
+
+  // Buscar TODOS os planos disponíveis para escolha
+  const { data: planosDisponiveis, isLoading: loadingPlanos } = useQuery({
+    queryKey: ['planos-disponiveis'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('planos')
+        .select('*')
+        .eq('ativo', true)
+        .order('ordem', { ascending: true });
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  // Buscar benefícios de todos os planos
+  const { data: todosBeneficios } = useQuery({
+    queryKey: ['todos-beneficios-planos'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('beneficios')
+        .select('*')
+        .eq('ativo', true);
+      if (error) throw error;
+      return data || [];
+    },
+  });
 
   const handleAssinar = async () => {
     setAssinando(true);
@@ -131,65 +177,140 @@ export default function Beneficios() {
       </div>
 
       <div className="max-w-lg mx-auto px-4 -mt-6 space-y-4">
-        {!temAssinatura ? (
-          <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-4">
-            <div className="flex items-start gap-3">
-              <Lock className="w-5 h-5 text-[#d4af37] mt-0.5" />
-              <div className="flex-1">
-                <p className="font-semibold mb-2 text-gray-800">Benefícios Premium</p>
-                {aguardandoPagamento ? (
-                  <>
-                    <p className="text-sm mb-3 text-amber-700">Aguardando pagamento. Clique para pagar.</p>
-                    <button
-                      className="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg font-semibold text-sm flex items-center gap-2"
-                      onClick={() => {
-                        if (associado?.link_pagamento) {
-                          window.open(associado.link_pagamento, '_blank');
-                        } else {
-                          handleAssinar();
-                        }
-                      }}
-                      disabled={assinando}
-                    >
-                      {assinando && <Loader2 className="w-4 h-4 animate-spin" />}
-                      {assinando ? 'Processando...' : <><ExternalLink className="w-4 h-4" /> Pagar Agora</>}
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <p className="text-sm mb-3 text-gray-600">
-                      Assine o plano de R$ 30/mês para ter acesso a Telemedicina e Clube de Descontos em +30 mil estabelecimentos em todo Brasil.
-                    </p>
-                    <button
-                      className="bg-[#d4af37] hover:bg-[#c4a030] text-[#1e3a5f] px-4 py-2 rounded-lg font-semibold text-sm flex items-center gap-2 disabled:opacity-50"
-                      onClick={handleAssinar}
-                      disabled={assinando}
-                    >
-                      {assinando && <Loader2 className="w-4 h-4 animate-spin" />}
-                      {assinando ? 'Processando...' : 'Assinar Agora'}
-                    </button>
-                  </>
-                )}
-              </div>
-            </div>
+        {/* Lista de Planos Disponíveis */}
+        {loadingPlanos ? (
+          <div className="space-y-4">
+            {[1, 2].map((i) => (
+              <Skeleton key={i} className="h-64 w-full" />
+            ))}
+          </div>
+        ) : planosDisponiveis && planosDisponiveis.length > 0 ? (
+          <div className="space-y-4">
+            {planosDisponiveis.map((plano) => {
+              const beneficiosIds = plano.beneficios_ids || [];
+              const beneficiosDoPlano = todosBeneficios?.filter(b => beneficiosIds.includes(b.id)) || [];
+              const isPlanoAtual = planoAtivo?.id === plano.id;
+              
+              return (
+                <Card 
+                  key={plano.id} 
+                  className={`border-0 shadow-lg overflow-hidden ${isPlanoAtual ? 'ring-2 ring-emerald-500' : ''}`}
+                  style={{ borderTop: `4px solid ${plano.cor_destaque || '#1e3a5f'}` }}
+                >
+                  <CardContent className="p-5">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#1e3a5f] to-[#152a45] flex items-center justify-center">
+                        <Package className="w-6 h-6 text-white" />
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-bold text-gray-800 text-lg">{plano.titulo}</h3>
+                          {isPlanoAtual && (
+                            <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-xs font-semibold rounded-full">
+                              PLANO ATUAL
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-sm text-gray-500">{plano.descricao}</p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-baseline gap-1 mb-4">
+                      <span className="text-3xl font-bold text-gray-800">R$ {plano.valor}</span>
+                      <span className="text-gray-500 text-sm">/mês</span>
+                    </div>
+
+                    {/* Lista de Benefícios do Plano */}
+                    <div className="space-y-3 mb-5">
+                      <p className="font-semibold text-gray-700 text-sm">Benefícios incluídos:</p>
+                      {beneficiosDoPlano.length > 0 ? (
+                        <div className="space-y-2">
+                          {beneficiosDoPlano.slice(0, 5).map((beneficio) => (
+                            <div key={beneficio.id} className="flex items-start gap-3 p-2 bg-gray-50 rounded-lg">
+                              <div className="w-6 h-6 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">
+                                <Check className="w-3 h-3 text-emerald-600" />
+                              </div>
+                              <div>
+                                <p className="font-medium text-gray-800 text-sm">{beneficio.titulo}</p>
+                              </div>
+                            </div>
+                          ))}
+                          {beneficiosDoPlano.length > 5 && (
+                            <p className="text-xs text-gray-500 text-center">
+                              +{beneficiosDoPlano.length - 5} benefícios
+                            </p>
+                          )}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-gray-400">Nenhum benefício vinculado a este plano.</p>
+                      )}
+                    </div>
+
+                    {/* Botão de Ação */}
+                    {isPlanoAtual ? (
+                      temAssinatura ? (
+                        <Button 
+                          variant="outline" 
+                          className="w-full bg-emerald-50 border-emerald-200 text-emerald-700"
+                          disabled
+                        >
+                          <Check className="w-4 h-4 mr-2" />
+                          Plano Ativo
+                        </Button>
+                      ) : aguardandoPagamento ? (
+                        <Button 
+                          className="w-full bg-amber-500 hover:bg-amber-600 text-white"
+                          onClick={() => {
+                            if (plano.link_pagamento) {
+                              window.open(plano.link_pagamento, '_blank');
+                            } else {
+                              toast.error('Link de pagamento não configurado para este plano.');
+                            }
+                          }}
+                        >
+                          <ExternalLink className="w-4 h-4 mr-2" />
+                          Efetuar Pagamento
+                        </Button>
+                      ) : (
+                        <Button 
+                          className="w-full bg-[#d4af37] hover:bg-[#c4a030] text-[#1e3a5f] font-semibold"
+                          onClick={() => {
+                            if (plano.link_pagamento) {
+                              window.open(plano.link_pagamento, '_blank');
+                            } else {
+                              toast.error('Link de pagamento não configurado para este plano. Entre em contato com o administrador.');
+                            }
+                          }}
+                        >
+                          <ExternalLink className="w-4 h-4 mr-2" />
+                          Efetuar Pagamento
+                        </Button>
+                      )
+                    ) : (
+                      <Button 
+                        className="w-full bg-[#1e3a5f] hover:bg-[#152a45] text-white font-semibold"
+                        onClick={() => {
+                          if (plano.link_pagamento) {
+                            window.open(plano.link_pagamento, '_blank');
+                          } else {
+                            toast.error('Link de pagamento não configurado para este plano. Entre em contato com o administrador.');
+                          }
+                        }}
+                      >
+                        <ExternalLink className="w-4 h-4 mr-2" />
+                        Efetuar Pagamento
+                      </Button>
+                    )}
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
         ) : (
-          <>
-            {beneficios && beneficios.length > 0 ? (
-              beneficios.map((beneficio) => (
-                <BeneficioCard 
-                  key={beneficio.id} 
-                  beneficio={beneficio} 
-                  isAtivo={true} 
-                />
-              ))
-            ) : (
-              <div className="text-center py-12">
-                <Gift className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                <p className="text-gray-500">Nenhum benefício disponível no momento</p>
-              </div>
-            )}
-          </>
+          <div className="text-center py-12">
+            <Gift className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+            <p className="text-gray-500">Nenhum plano disponível no momento</p>
+          </div>
         )}
       </div>
     </div>

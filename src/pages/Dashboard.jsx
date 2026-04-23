@@ -14,7 +14,8 @@ import {
   AlertCircle,
   ExternalLink,
   Loader2,
-  CheckCircle2
+  CheckCircle2,
+  Package
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
@@ -44,6 +45,23 @@ export default function Dashboard() {
   });
   
   const representante = representanteDb || representanteAuth;
+
+  // Fetch plano ativo do usuário (se tiver assinatura)
+  const { data: planoAtivo } = useQuery({
+    queryKey: ['plano-ativo', representante?.id],
+    queryFn: async () => {
+      if (!representante?.plano_id) return null;
+      const { data, error } = await supabase
+        .from('planos')
+        .select('*')
+        .eq('id', representante.plano_id)
+        .eq('ativo', true)
+        .single();
+      if (error && error.code !== 'PGRST116') throw error;
+      return data;
+    },
+    enabled: !!representante?.plano_id,
+  });
 
   const { data: beneficios } = useQuery({
     queryKey: ['beneficios-preview'],
@@ -87,7 +105,7 @@ export default function Dashboard() {
     );
   }
 
-  const isAprovado = representante?.ativo === true;
+  const isAprovado = representante?.status_aprovacao === 'aprovado';
   const temAssinatura = associado?.status_assinatura === 'ativo';
 
   const handleAssinar = async () => {
@@ -212,60 +230,49 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        {/* Plano Premium */}
+        {/* Plano Premium - Dinâmico */}
         {isAprovado && (
           <Card className={`shadow-lg border-0 ${temAssinatura ? 'bg-gradient-to-br from-green-50 to-emerald-50' : 'bg-gradient-to-br from-[#d4af37]/10 to-[#d4af37]/5'}`}>
             <CardContent className="p-5">
               <div className="flex items-start gap-3">
                 <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${temAssinatura ? 'bg-green-100' : 'bg-[#d4af37]/20'}`}>
-                  {temAssinatura ? <CheckCircle2 className="w-5 h-5 text-green-600" /> : <Gift className="w-5 h-5 text-[#d4af37]" />}
+                  {temAssinatura ? <CheckCircle2 className="w-5 h-5 text-green-600" /> : <Package className="w-5 h-5 text-[#d4af37]" />}
                 </div>
                 <div className="flex-1">
-                  {temAssinatura ? (
+                  {temAssinatura && planoAtivo ? (
                     <>
-                      <h3 className="font-semibold text-green-800 mb-1">Plano Premium Ativo ✓</h3>
+                      <h3 className="font-semibold text-green-800 mb-1">Seu plano atual é {planoAtivo.titulo} ✓</h3>
                       <p className="text-sm text-green-700">
-                        Você tem acesso a Telemedicina e Clube de Descontos em +30 mil estabelecimentos.
+                        {planoAtivo.descricao?.substring(0, 80)}...
                       </p>
+                      <div className="flex items-center gap-2 mt-2">
+                        <span className="text-sm font-semibold text-green-800">
+                          R$ {planoAtivo.valor}/mês
+                        </span>
+                      </div>
                       {associado?.data_proximo_pagamento && (
                         <p className="text-xs text-green-600 mt-2">
                           Próximo vencimento: {format(new Date(associado.data_proximo_pagamento), 'dd/MM/yyyy')}
                         </p>
                       )}
+                      <Link to="/Beneficios" className="block mt-3">
+                        <Button variant="outline" className="w-full text-sm">
+                          Ver meus benefícios <ChevronRight className="w-4 h-4 ml-1" />
+                        </Button>
+                      </Link>
                     </>
                   ) : (
                     <>
-                      <h3 className="font-semibold text-gray-800 mb-1">Plano Premium (Opcional)</h3>
-                      {associado?.status_assinatura === 'aguardando_pagamento' ? (
-                        <>
-                          <p className="text-sm text-amber-700 mb-3">Aguardando pagamento. Clique para pagar.</p>
-                          <Button
-                            className="w-full bg-amber-500 hover:bg-amber-600 text-white font-semibold"
-                            onClick={() => {
-                              if (associado?.link_pagamento) window.open(associado.link_pagamento, '_blank');
-                              else handleAssinar();
-                            }}
-                            disabled={assinando}
-                          >
-                            {assinando ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <ExternalLink className="w-4 h-4 mr-2" />}
-                            {assinando ? 'Processando...' : 'Pagar Agora'}
-                          </Button>
-                        </>
-                      ) : (
-                        <>
-                          <p className="text-sm text-gray-600 mb-3">
-                            Por apenas R$ 30/mês, tenha acesso a Telemedicina e Clube de Descontos em +30 mil estabelecimentos.
-                          </p>
-                          <Button
-                            className="w-full bg-[#d4af37] hover:bg-[#c4a030] text-[#1e3a5f] font-semibold"
-                            onClick={handleAssinar}
-                            disabled={assinando}
-                          >
-                            {assinando ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                            {assinando ? 'Processando...' : 'Assinar Plano Premium'}
-                          </Button>
-                        </>
-                      )}
+                      <h3 className="font-semibold text-gray-800 mb-1">Escolher Plano</h3>
+                      <p className="text-sm text-gray-600 mb-3">
+                        Escolha o plano ideal para você e tenha acesso a benefícios exclusivos.
+                      </p>
+                      <Link to="/Planos">
+                        <Button className="w-full bg-[#d4af37] hover:bg-[#c4a030] text-[#1e3a5f] font-semibold">
+                          <Package className="w-4 h-4 mr-2" />
+                          Ver Planos
+                        </Button>
+                      </Link>
                     </>
                   )}
                 </div>

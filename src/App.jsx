@@ -42,6 +42,11 @@ const AuthenticatedApp = () => {
           <Pages.Beneficios />
         </LayoutWrapper>
       } />
+      <Route path="/Planos" element={
+        <LayoutWrapper currentPageName="Planos">
+          <Pages.Planos />
+        </LayoutWrapper>
+      } />
       <Route path="/admin/login" element={<Pages.AdminLogin />} />
       <Route path="/admin" element={<Pages.Admin />} />
       <Route path="/admin/aprovacoes" element={<Pages.AdminAprovacoes />} />
@@ -56,6 +61,7 @@ const AuthenticatedApp = () => {
       <Route path="/admin/minha-equipe" element={<Pages.AdminMinhaEquipe />} />
       <Route path="/admin/noticias" element={<Pages.AdminNoticias />} />
       <Route path="/admin/notificacoes" element={<Pages.AdminNotificacoes />} />
+      <Route path="/admin/planos" element={<Pages.AdminPlanos />} />
       <Route path="/admin/representantes" element={<Pages.AdminRepresentantes />} />
       <Route path="/admin/video-clube" element={<Pages.AdminVideoClube />} />
       
@@ -72,8 +78,8 @@ const AuthenticatedApp = () => {
       {Object.entries(Pages).map(([path, Page]) => {
         // Pular páginas já definidas como públicas
         // Pular páginas já definidas como públicas ou com rotas explícitas
-        const publicPages = ['Login', 'Cadastro', 'VerificarCarteirinha', 'CidadeDetalhes', 'Representantes', 'Beneficios'];
-        const adminPages = ['Admin', 'AdminLogin', 'AdminAprovacoes', 'AdminAprovarPresidentes', 'AdminAnuncios', 'AdminAssociados', 'AdminBeneficios', 'AdminCarteirinhas', 'AdminConfiguracoes', 'AdminDiretoria', 'AdminFinanceiro', 'AdminMinhaEquipe', 'AdminNoticias', 'AdminNotificacoes', 'AdminRepresentantes', 'AdminVideoClube'];
+        const publicPages = ['Login', 'Cadastro', 'VerificarCarteirinha', 'CidadeDetalhes', 'Representantes', 'Beneficios', 'Planos'];
+        const adminPages = ['Admin', 'AdminLogin', 'AdminAprovacoes', 'AdminAprovarPresidentes', 'AdminAnuncios', 'AdminAssociados', 'AdminBeneficios', 'AdminCarteirinhas', 'AdminConfiguracoes', 'AdminDiretoria', 'AdminFinanceiro', 'AdminMinhaEquipe', 'AdminNoticias', 'AdminNotificacoes', 'AdminPlanos', 'AdminRepresentantes', 'AdminVideoClube'];
         if (publicPages.includes(path) || adminPages.includes(path)) {
           return null;
         }
