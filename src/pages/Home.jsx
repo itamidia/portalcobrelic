@@ -49,7 +49,7 @@ export default function Home() {
               
               <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
                 <Link 
-                  to="/Cadastro" 
+                  to="/Login?tab=cadastro" 
                   className="bg-[#d4af37] hover:bg-[#b8962f] text-[#1e3a5f] px-8 py-4 rounded-xl font-bold text-lg transition-colors flex items-center justify-center"
                 >
                   <UserPlus className="w-5 h-5 mr-2" />
@@ -227,7 +227,7 @@ export default function Home() {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link 
-              to="/Cadastro" 
+              to="/Login?tab=cadastro" 
               className="bg-[#d4af37] hover:bg-[#b8962f] text-[#1e3a5f] px-8 py-4 rounded-xl font-bold text-lg transition-colors"
             >
               Associe-se Agora

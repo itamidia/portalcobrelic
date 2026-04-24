@@ -42,7 +42,7 @@ export default function PublicFooter() {
               <img 
                 src="/logo.png" 
                 alt="COBRELIC" 
-                className="h-12 w-auto object-contain brightness-0 invert"
+                className="h-20 w-auto object-contain brightness-0 invert"
               />
             </Link>
             <p className="text-white/70 text-sm mb-4 max-w-xs">

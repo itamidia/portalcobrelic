@@ -1,15 +1,14 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LogIn, UserPlus, Menu, X } from 'lucide-react';
+import { LogIn, UserPlus, Menu, X, Heart } from 'lucide-react';
 import { useState } from 'react';
 
 const menuItems = [
   { path: '/', label: 'Home' },
+  { path: '/NoticiasPublico', label: 'Notícias' },
   { path: '/Representantes', label: 'Representantes' },
   { path: '/Sobre', label: 'Sobre' },
   { path: '/Planos', label: 'Planos' },
-  { path: '/ClubeBeneficios', label: 'Clube de Benefícios' },
-  { path: '/NoticiasPublico', label: 'Notícias' },
   { path: '/Contato', label: 'Contato' },
 ];
 
@@ -52,6 +51,18 @@ export default function PublicHeader() {
                 {item.label}
               </Link>
             ))}
+            {/* Clube de Benefícios como botão destacado */}
+            <Link
+              to="/ClubeBeneficios"
+              className={`px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 ${
+                isActive('/ClubeBeneficios')
+                  ? 'bg-[#d4af37] text-[#1e3a5f]'
+                  : 'bg-[#1e3a5f] text-white hover:bg-[#152a45]'
+              }`}
+            >
+              <Heart className="w-4 h-4" />
+              Clube de Benefícios
+            </Link>
           </nav>
 
           {/* Desktop Actions */}
@@ -99,6 +110,19 @@ export default function PublicHeader() {
                   {item.label}
                 </Link>
               ))}
+              {/* Clube de Benefícios no mobile */}
+              <Link
+                to="/ClubeBeneficios"
+                className={`px-2 py-2 rounded-lg font-medium flex items-center gap-2 ${
+                  isActive('/ClubeBeneficios')
+                    ? 'bg-[#d4af37] text-[#1e3a5f]'
+                    : 'bg-[#1e3a5f] text-white'
+                }`}
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <Heart className="w-4 h-4" />
+                Clube de Benefícios
+              </Link>
             </nav>
             <div className="flex flex-col gap-2 mt-4 pt-4 border-t">
               <Link 

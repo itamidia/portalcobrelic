@@ -193,7 +193,7 @@ export default function PlanosPublico() {
               Falar com Atendimento
             </Link>
             <Link 
-              to="/Cadastro" 
+              to="/Login?tab=cadastro" 
               className="inline-flex items-center justify-center bg-[#d4af37] hover:bg-[#c4a030] text-[#1e3a5f] px-8 py-4 rounded-xl font-semibold transition-colors"
             >
               <UserPlus className="w-5 h-5 mr-2" />

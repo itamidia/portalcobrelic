@@ -125,7 +125,7 @@ export default function ClubeBeneficios() {
           <p className="text-gray-600 text-lg mb-6 max-w-2xl mx-auto">
             Associe-se agora e tenha acesso a todos esses benefícios exclusivos para líderes comunitários.
           </p>
-          <Link to="/Cadastro">
+          <Link to="/Login?tab=cadastro">
             <Button 
               className="bg-[#1e3a5f] hover:bg-[#152a45] text-white font-bold text-lg px-10 py-4 h-auto"
             >

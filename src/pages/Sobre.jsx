@@ -202,7 +202,7 @@ export default function Sobre() {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link 
-              to="/Cadastro" 
+              to="/Login?tab=cadastro" 
               className="inline-flex items-center justify-center bg-[#1e3a5f] hover:bg-[#152a45] text-white px-8 py-4 rounded-xl font-semibold transition-colors"
             >
               <UserPlus className="w-5 h-5 mr-2" />
