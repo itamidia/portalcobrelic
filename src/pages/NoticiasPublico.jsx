@@ -6,7 +6,8 @@ import {
   ChevronRight,
   TrendingUp,
   Tag,
-  Video
+  Video,
+  Shield
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useQuery } from '@tanstack/react-query';
@@ -374,54 +375,151 @@ function VideoDestaque() {
   );
 }
 
-// Componente de Parceiros Carousel (todos visíveis)
-function ParceirosCarousel() {
+// Componente de Parceiros e Patrocinadores - Scroll Horizontal Contínuo
+function ParceirosSection() {
+  const scrollRef = React.useRef(null);
+  const [isPaused, setIsPaused] = React.useState(false);
+
   const { data: anuncios, isLoading } = useQuery({
-    queryKey: ['anuncios-parceiros'],
+    queryKey: ['anuncios-parceiros-lateral'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('anuncios')
         .select('*')
         .eq('ativo', true)
-        .eq('posicao', 'parceiros')
+        .eq('posicao', 'lateral')
         .order('ordem', { ascending: true });
-      
+
       if (error) throw error;
       return data || [];
     },
   });
 
-  if (isLoading) {
-    return <Skeleton className="h-24 rounded-lg" />;
-  }
+  // Scroll automático contínuo
+  React.useEffect(() => {
+    if (!anuncios || anuncios.length <= 3 || !scrollRef.current) return;
 
-  if (!anuncios || anuncios.length === 0) {
+    const scrollContainer = scrollRef.current;
+    let animationId;
+    let scrollPos = 0;
+    const speed = 0.5; // pixels por frame
+
+    const animate = () => {
+      if (!isPaused && scrollContainer) {
+        scrollPos += speed;
+        
+        // Se chegou no final, volta ao início
+        if (scrollPos >= scrollContainer.scrollWidth - scrollContainer.clientWidth) {
+          scrollPos = 0;
+        }
+        
+        scrollContainer.scrollLeft = scrollPos;
+      }
+      animationId = requestAnimationFrame(animate);
+    };
+
+    animationId = requestAnimationFrame(animate);
+
+    return () => cancelAnimationFrame(animationId);
+  }, [anuncios, isPaused]);
+
+  if (isLoading) {
     return (
-      <div className="h-24 rounded-lg bg-gradient-to-r from-[#1e3a5f]/5 to-[#2d5a8f]/5 flex items-center justify-center border-2 border-dashed border-[#1e3a5f]/20">
-        <span className="text-[#1e3a5f]/40 font-medium text-sm">Espaço para parceiros</span>
+      <div>
+        <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+          <Shield className="w-5 h-5 text-[#1e3a5f]" />
+          Parceiros e Patrocinadores Nacionais
+        </h2>
+        <Skeleton className="w-full h-32 rounded-xl" />
       </div>
     );
   }
 
+  if (!anuncios || anuncios.length === 0) {
+    return (
+      <div>
+        <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+          <Shield className="w-5 h-5 text-[#1e3a5f]" />
+          Parceiros e Patrocinadores Nacionais
+        </h2>
+        <div className="w-full h-32 rounded-xl bg-gradient-to-r from-[#1e3a5f]/5 to-[#2d5a8f]/5 flex items-center justify-center border-2 border-dashed border-[#1e3a5f]/20">
+          <span className="text-[#1e3a5f]/40 font-medium">Espaço para parceiros</span>
+        </div>
+      </div>
+    );
+  }
+
+  // Duplicar anúncios para criar efeito infinito
+  const duplicatedAnuncios = [...anuncios, ...anuncios];
+
   return (
-    <div className="bg-gray-50 rounded-lg p-4">
-      <h4 className="text-sm font-semibold text-gray-600 mb-3 text-center">Nossos Parceiros</h4>
-      <div className="flex flex-wrap justify-center gap-4">
-        {anuncios.map((anuncio) => (
-          <a
-            key={anuncio.id}
-            href={anuncio.link || '#'}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="block grayscale hover:grayscale-0 transition-all"
-          >
-            <img
-              src={anuncio.imagem_url}
-              alt={anuncio.titulo}
-              className="h-12 w-auto object-contain"
-            />
-          </a>
-        ))}
+    <div>
+      <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+        <Shield className="w-5 h-5 text-[#1e3a5f]" />
+        Parceiros e Patrocinadores Nacionais
+      </h2>
+
+      <div 
+        className="relative w-full rounded-xl overflow-hidden bg-white border border-gray-200"
+        onMouseEnter={() => setIsPaused(true)}
+        onMouseLeave={() => setIsPaused(false)}
+      >
+        {/* Container scrollable */}
+        <div
+          ref={scrollRef}
+          className="flex overflow-x-auto scrollbar-hide"
+          style={{ 
+            scrollbarWidth: 'none', 
+            msOverflowStyle: 'none',
+            scrollBehavior: 'auto'
+          }}
+        >
+          {duplicatedAnuncios.map((anuncio, idx) => (
+            <a
+              key={`${anuncio.id}-${idx}`}
+              href={anuncio.link || '#'}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex-shrink-0 w-1/3 p-4 group"
+            >
+              <div className="h-36 md:h-44 bg-gray-50 rounded-lg flex items-center justify-center p-3 grayscale group-hover:grayscale-0 transition-all hover:shadow-md border border-gray-100">
+                <img
+                  src={anuncio.imagem_url}
+                  alt={anuncio.titulo}
+                  className="max-w-full max-h-full object-contain"
+                />
+              </div>
+            </a>
+          ))}
+        </div>
+
+        {/* Botões de navegação manual */}
+        {anuncios.length > 3 && (
+          <>
+            <button
+              onClick={() => {
+                if (scrollRef.current) {
+                  scrollRef.current.scrollBy({ left: -300, behavior: 'smooth' });
+                }
+              }}
+              className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 hover:bg-white shadow-lg flex items-center justify-center transition-all z-10"
+              aria-label="Anterior"
+            >
+              <ChevronRight className="w-4 h-4 text-[#1e3a5f] rotate-180" />
+            </button>
+            <button
+              onClick={() => {
+                if (scrollRef.current) {
+                  scrollRef.current.scrollBy({ left: 300, behavior: 'smooth' });
+                }
+              }}
+              className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 hover:bg-white shadow-lg flex items-center justify-center transition-all z-10"
+              aria-label="Próximo"
+            >
+              <ChevronRight className="w-4 h-4 text-[#1e3a5f]" />
+            </button>
+          </>
+        )}
       </div>
     </div>
   );
@@ -500,9 +598,9 @@ export default function NoticiasPublico() {
           </div>
         </div>
 
-        {/* Carousel de Parceiros */}
+        {/* Parceiros e Patrocinadores */}
         <div className="mb-8">
-          <ParceirosCarousel />
+          <ParceirosSection />
         </div>
 
         {/* Layout de Notícias por Categoria + Sidebar */}
