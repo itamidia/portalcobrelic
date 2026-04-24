@@ -1,7 +1,7 @@
 import React from 'react';
 import { supabase } from '@/lib/supabase';
 import { useQuery } from '@tanstack/react-query';
-import { 
+import {
   Check,
   Star,
   Crown,
@@ -19,6 +19,8 @@ import {
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import PublicHeader from '../components/public/PublicHeader';
+import PublicFooter from '../components/public/PublicFooter';
 
 export default function PlanosPublico() {
   const { data: planos, isLoading } = useQuery({
@@ -44,14 +46,7 @@ export default function PlanosPublico() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <header className="bg-white shadow-sm sticky top-0 z-50">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between items-center h-16">
-              <Skeleton className="h-10 w-32" />
-              <Skeleton className="h-10 w-48" />
-            </div>
-          </div>
-        </header>
+        <PublicHeader />
         <div className="max-w-7xl mx-auto px-4 py-12">
           <div className="grid md:grid-cols-3 gap-6">
             {[1, 2, 3].map(i => (
@@ -59,67 +54,14 @@ export default function PlanosPublico() {
             ))}
           </div>
         </div>
+        <PublicFooter />
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            {/* Logo */}
-            <Link to="/" className="flex items-center">
-              <img 
-                src="/logo.png" 
-                alt="COBRELIC" 
-                className="h-20 w-auto object-contain mr-3"
-              />
-            </Link>
-            
-            {/* Navigation Pública */}
-            <nav className="hidden sm:flex items-center space-x-6">
-              <Link to="/" className="text-gray-700 hover:text-[#1e3a5f] font-medium transition-colors">
-                Home
-              </Link>
-              <Link to="/Sobre" className="text-gray-700 hover:text-[#1e3a5f] font-medium transition-colors">
-                Sobre
-              </Link>
-              <Link to="/Representantes" className="text-gray-700 hover:text-[#1e3a5f] font-medium transition-colors">
-                Representantes
-              </Link>
-              <Link to="/Planos" className="text-[#1e3a5f] font-semibold transition-colors">
-                Planos
-              </Link>
-              <Link to="/ClubeBeneficios" className="text-gray-700 hover:text-[#1e3a5f] font-medium transition-colors">
-                Clube de Benefícios
-              </Link>
-              <Link to="/Contato" className="text-gray-700 hover:text-[#1e3a5f] font-medium transition-colors">
-                Contato
-              </Link>
-            </nav>
-
-            {/* CTA Buttons */}
-            <div className="flex items-center space-x-3">
-              <Link 
-                to="/Login" 
-                className="flex items-center text-[#1e3a5f] hover:text-[#d4af37] font-medium transition-colors"
-              >
-                <LogIn className="w-4 h-4 mr-1" />
-                Entrar
-              </Link>
-              <Link 
-                to="/Login?tab=cadastro" 
-                className="bg-[#1e3a5f] hover:bg-[#152a45] text-white px-5 py-2 rounded-lg font-medium transition-colors flex items-center"
-              >
-                <UserPlus className="w-4 h-4 mr-2" />
-                Associe-se
-              </Link>
-            </div>
-          </div>
-        </div>
-      </header>
+      <PublicHeader />
 
       {/* Hero Section */}
       <section className="bg-gradient-to-br from-[#1e3a5f] via-[#2a4a73] to-[#1e3a5f] text-white py-16">
@@ -261,53 +203,7 @@ export default function PlanosPublico() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="bg-gray-900 text-gray-400 py-12 mt-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid md:grid-cols-4 gap-8 mb-8">
-            <div>
-              <div className="flex items-center mb-4">
-                <img 
-                  src="/logo.png" 
-                  alt="COBRELIC" 
-                  className="h-13 w-auto object-contain mr-2"
-                />
-                
-              </div>
-              <p className="text-sm">
-                Confederação Brasileira de Líderes Comunitários
-              </p>
-            </div>
-            
-            <div>
-              <h4 className="text-white font-semibold mb-4">Links Rápidos</h4>
-              <ul className="space-y-2 text-sm">
-                <li><Link to="/Login" className="hover:text-white transition-colors">Login</Link></li>
-                <li><Link to="/Cadastro" className="hover:text-white transition-colors">Associar-se</Link></li>
-                <li><Link to="/Representantes" className="hover:text-white transition-colors">Representantes</Link></li>
-                <li><Link to="/Sobre" className="hover:text-white transition-colors">Sobre</Link></li>
-              </ul>
-            </div>
-            
-            <div>
-              <h4 className="text-white font-semibold mb-4">Informações</h4>
-              <ul className="space-y-2 text-sm">
-                <li><Link to="/Planos" className="hover:text-white transition-colors">Planos</Link></li>
-                <li><Link to="/Contato" className="hover:text-white transition-colors">Contato</Link></li>
-              </ul>
-            </div>
-            
-            <div>
-              <h4 className="text-white font-semibold mb-4">Contato</h4>
-              <p className="text-sm">contato@cobrellic.org.br</p>
-            </div>
-          </div>
-          
-          <div className="border-t border-gray-800 pt-8 text-center text-sm">
-            <p>&copy; 2024 COBRELIC. Todos os direitos reservados.</p>
-          </div>
-        </div>
-      </footer>
+      <PublicFooter />
     </div>
   );
 }

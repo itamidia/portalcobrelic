@@ -6,52 +6,40 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Video, Save, Loader2, Trash2, ExternalLink } from 'lucide-react';
+import { Video, Save, Loader2, Trash2, ExternalLink, Plus, Star, GripVertical } from 'lucide-react';
 import { toast } from 'sonner';
+import { Switch } from '@/components/ui/switch';
+import { Badge } from '@/components/ui/badge';
 
 export default function AdminVideoClube() {
   const queryClient = useQueryClient();
+  const [editingId, setEditingId] = useState(null);
   const [formData, setFormData] = useState({
     titulo: '',
     url_video: '',
+    destaque: false,
+    ordem: 0,
   });
 
   const { data: videos, isLoading } = useQuery({
     queryKey: ['video-clube'],
     queryFn: async () => {
-      const { data, error } = await supabase.from('video_clube').select('*');
+      const { data, error } = await supabase
+        .from('video_clube')
+        .select('*')
+        .order('ordem', { ascending: true });
       if (error) throw error;
       return data || [];
     },
   });
 
-  // Atualiza o form quando os dados carregam
-  React.useEffect(() => {
-    if (videos && videos.length > 0) {
-      setFormData({
-        titulo: videos[0].titulo || '',
-        url_video: videos[0].url_video || '',
-      });
-    }
-  }, [videos]);
-
-  // Atualiza o form quando os dados carregam
-  React.useEffect(() => {
-    if (videos && videos.length > 0) {
-      setFormData({
-        titulo: videos[0].titulo || '',
-        url_video: videos[0].url_video || '',
-      });
-    }
-  }, [videos]);
-
   const saveMutation = useMutation({
     mutationFn: async (data) => {
-      if (videos && videos.length > 0) {
+      if (editingId) {
         const { error } = await supabase
           .from('video_clube')
           .update(data)
-          .eq('id', videos[0].id);
+          .eq('id', editingId);
         if (error) throw error;
       } else {
         const { error } = await supabase
@@ -62,7 +50,9 @@ export default function AdminVideoClube() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['video-clube'] });
-      toast.success('Vídeo salvo com sucesso!');
+      toast.success(editingId ? 'Vídeo atualizado!' : 'Vídeo adicionado!');
+      setEditingId(null);
+      setFormData({ titulo: '', url_video: '', destaque: false, ordem: 0 });
     },
     onError: (error) => {
       toast.error('Erro ao salvar: ' + error.message);
@@ -70,18 +60,15 @@ export default function AdminVideoClube() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: async () => {
-      if (videos && videos.length > 0) {
-        const { error } = await supabase
-          .from('video_clube')
-          .delete()
-          .eq('id', videos[0].id);
-        if (error) throw error;
-      }
+    mutationFn: async (id) => {
+      const { error } = await supabase
+        .from('video_clube')
+        .delete()
+        .eq('id', id);
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['video-clube'] });
-      setFormData({ titulo: '', url_video: '' });
       toast.success('Vídeo removido!');
     },
     onError: (error) => {
@@ -89,13 +76,52 @@ export default function AdminVideoClube() {
     },
   });
 
+  const toggleDestaqueMutation = useMutation({
+    mutationFn: async ({ id, destaque }) => {
+      // Se estiver ativando destaque, desativa outros primeiro
+      if (destaque) {
+        await supabase
+          .from('video_clube')
+          .update({ destaque: false })
+          .neq('id', id);
+      }
+      const { error } = await supabase
+        .from('video_clube')
+        .update({ destaque })
+        .eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['video-clube'] });
+      toast.success('Status de destaque atualizado!');
+    },
+    onError: (error) => {
+      toast.error('Erro ao atualizar: ' + error.message);
+    },
+  });
+
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!formData.titulo || !formData.url_video) {
-      toast.error('Preencha todos os campos');
+      toast.error('Preencha todos os campos obrigatórios');
       return;
     }
     saveMutation.mutate(formData);
+  };
+
+  const handleEdit = (video) => {
+    setEditingId(video.id);
+    setFormData({
+      titulo: video.titulo,
+      url_video: video.url_video,
+      destaque: video.destaque || false,
+      ordem: video.ordem || 0,
+    });
+  };
+
+  const handleCancel = () => {
+    setEditingId(null);
+    setFormData({ titulo: '', url_video: '', destaque: false, ordem: 0 });
   };
 
   // Função para converter URL do YouTube para embed
@@ -120,10 +146,10 @@ export default function AdminVideoClube() {
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-3">
             <Video className="w-7 h-7 text-[#1e3a5f]" />
-            Vídeo do Clube de Benefícios
+            Gerenciar Vídeos
           </h1>
           <p className="text-gray-600 mt-1">
-            Configure o vídeo explicativo que aparece na página do Clube de Benefícios
+            Adicione múltiplos vídeos. Marque um como "Destaque" para exibir na página de Notícias.
           </p>
         </div>
 
@@ -131,7 +157,7 @@ export default function AdminVideoClube() {
           {/* Formulário */}
           <Card>
             <CardHeader>
-              <CardTitle>Configurar Vídeo</CardTitle>
+              <CardTitle>{editingId ? 'Editar Vídeo' : 'Adicionar Novo Vídeo'}</CardTitle>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-4">
@@ -146,16 +172,40 @@ export default function AdminVideoClube() {
                 </div>
 
                 <div>
-                  <Label>URL do Vídeo</Label>
+                  <Label>URL do Vídeo (YouTube)</Label>
                   <Input
                     value={formData.url_video}
                     onChange={(e) => setFormData({ ...formData, url_video: e.target.value })}
-                    placeholder="Cole a URL do YouTube aqui"
+                    placeholder="https://www.youtube.com/watch?v=XXXXX"
                     className="mt-1"
                   />
                   <p className="text-xs text-gray-500 mt-1">
-                    Aceita links do YouTube (ex: https://www.youtube.com/watch?v=XXXXX)
+                    Aceita links do YouTube ou URLs de embed
                   </p>
+                </div>
+
+                <div className="flex items-center gap-3 pt-2">
+                  <Switch
+                    checked={formData.destaque}
+                    onCheckedChange={(checked) => setFormData({ ...formData, destaque: checked })}
+                  />
+                  <Label className="cursor-pointer">
+                    <div className="flex items-center gap-2">
+                      <Star className="w-4 h-4 text-yellow-500" />
+                      Vídeo em Destaque (aparece na página de Notícias)
+                    </div>
+                  </Label>
+                </div>
+
+                <div>
+                  <Label>Ordem (opcional)</Label>
+                  <Input
+                    type="number"
+                    value={formData.ordem}
+                    onChange={(e) => setFormData({ ...formData, ordem: parseInt(e.target.value) || 0 })}
+                    placeholder="0"
+                    className="mt-1 w-24"
+                  />
                 </div>
 
                 <div className="flex gap-3 pt-4">
@@ -166,25 +216,21 @@ export default function AdminVideoClube() {
                   >
                     {saveMutation.isPending ? (
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    ) : (
+                    ) : editingId ? (
                       <Save className="w-4 h-4 mr-2" />
+                    ) : (
+                      <Plus className="w-4 h-4 mr-2" />
                     )}
-                    Salvar Vídeo
+                    {editingId ? 'Atualizar' : 'Adicionar'}
                   </Button>
 
-                  {videos && videos.length > 0 && (
+                  {editingId && (
                     <Button
                       type="button"
-                      variant="destructive"
-                      onClick={() => deleteMutation.mutate()}
-                      disabled={deleteMutation.isPending}
+                      variant="outline"
+                      onClick={handleCancel}
                     >
-                      {deleteMutation.isPending ? (
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      ) : (
-                        <Trash2 className="w-4 h-4 mr-2" />
-                      )}
-                      Remover
+                      Cancelar
                     </Button>
                   )}
                 </div>
@@ -195,17 +241,7 @@ export default function AdminVideoClube() {
           {/* Preview */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                Preview
-                <a
-                  href="/ClubeBeneficios"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-sm font-normal text-[#1e3a5f] hover:underline flex items-center gap-1"
-                >
-                  Ver página <ExternalLink className="w-4 h-4" />
-                </a>
-              </CardTitle>
+              <CardTitle>Preview</CardTitle>
             </CardHeader>
             <CardContent>
               {formData.url_video ? (
@@ -229,6 +265,89 @@ export default function AdminVideoClube() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Lista de Vídeos */}
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle>Vídeos Cadastrados ({videos?.length || 0})</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <div className="space-y-3">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="h-16 bg-gray-100 rounded animate-pulse" />
+                ))}
+              </div>
+            ) : videos?.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                <Video className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                <p>Nenhum vídeo cadastrado ainda</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {videos?.map((video, index) => (
+                  <div
+                    key={video.id}
+                    className={`flex items-center gap-4 p-4 rounded-lg border ${
+                      video.destaque ? 'border-yellow-400 bg-yellow-50' : 'border-gray-200'
+                    }`}
+                  >
+                    <div className="text-gray-400">
+                      <GripVertical className="w-5 h-5" />
+                    </div>
+                    
+                    <div className="w-24 h-16 bg-gray-900 rounded overflow-hidden flex-shrink-0">
+                      <iframe
+                        src={getEmbedUrl(video.url_video)}
+                        title={video.titulo}
+                        className="w-full h-full"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      />
+                    </div>
+                    
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-medium text-gray-800 truncate">{video.titulo}</h4>
+                      <div className="flex items-center gap-2 mt-1">
+                        {video.destaque && (
+                          <Badge className="bg-yellow-100 text-yellow-800 border-yellow-300">
+                            <Star className="w-3 h-3 mr-1" />
+                            Destaque
+                          </Badge>
+                        )}
+                        <span className="text-xs text-gray-500">Ordem: {video.ordem || 0}</span>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        checked={video.destaque || false}
+                        onCheckedChange={(checked) => 
+                          toggleDestaqueMutation.mutate({ id: video.id, destaque: checked })
+                        }
+                      />
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleEdit(video)}
+                      >
+                        <Save className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-red-600 hover:text-red-700"
+                        onClick={() => deleteMutation.mutate(video.id)}
+                        disabled={deleteMutation.isPending}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </AdminLayout>
   );

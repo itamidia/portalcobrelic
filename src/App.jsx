@@ -42,6 +42,7 @@ const AuthenticatedApp = () => {
       <Route path="/Sobre" element={<Pages.Sobre />} />
       <Route path="/Contato" element={<Pages.Contato />} />
       <Route path="/Planos" element={<Pages.PlanosPublico />} />
+      <Route path="/ClubeBeneficios" element={<Pages.ClubeBeneficios />} />
       <Route path="/Beneficios" element={
         <LayoutWrapper currentPageName="Beneficios">
           <Pages.Beneficios />
@@ -64,6 +65,10 @@ const AuthenticatedApp = () => {
       <Route path="/admin/planos" element={<Pages.AdminPlanos />} />
       <Route path="/admin/representantes" element={<Pages.AdminRepresentantes />} />
       <Route path="/admin/video-clube" element={<Pages.AdminVideoClube />} />
+      
+      {/* Páginas de Notícias */}
+      <Route path="/NoticiasPublico" element={<Pages.NoticiasPublico />} />
+      <Route path="/NoticiaDetalhes/:id" element={<Pages.NoticiaDetalhes />} />
       
       {/* Páginas protegidas (precisam de auth) - Dashboard e outras */}
       <Route path="/Dashboard" element={

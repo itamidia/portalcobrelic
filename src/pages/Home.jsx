@@ -6,73 +6,19 @@ import {
   Gift, 
   CreditCard, 
   MapPin, 
-  LogIn, 
-  UserPlus, 
   ChevronRight,
   Award,
   Heart,
-  Globe
+  Globe,
+  UserPlus
 } from 'lucide-react';
+import PublicHeader from '../components/public/PublicHeader';
+import PublicFooter from '../components/public/PublicFooter';
 
 export default function Home() {
   return (
     <div className="min-h-screen bg-white">
-      {/* Header/Navigation */}
-      <header className="bg-white shadow-sm sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            {/* Logo */}
-            <Link to="/" className="flex items-center">
-              <img 
-                src="/logo.png" 
-                alt="COBRELIC" 
-                className="h-20 w-auto object-contain mr-3"
-              />
-              
-            </Link>
-            
-            {/* Navigation Pública */}
-            <nav className="hidden sm:flex items-center space-x-6">
-              <Link to="/" className="text-[#1e3a5f] font-semibold transition-colors">
-                Home
-              </Link>
-              <Link to="/Sobre" className="text-gray-700 hover:text-[#1e3a5f] font-medium transition-colors">
-                Sobre
-              </Link>
-              <Link to="/Representantes" className="text-gray-700 hover:text-[#1e3a5f] font-medium transition-colors">
-                Representantes
-              </Link>
-              <Link to="/Planos" className="text-gray-700 hover:text-[#1e3a5f] font-medium transition-colors">
-                Planos
-              </Link>
-              <Link to="/ClubeBeneficios" className="text-gray-700 hover:text-[#1e3a5f] font-medium transition-colors">
-                Clube de Benefícios
-              </Link>
-              <Link to="/Contato" className="text-gray-700 hover:text-[#1e3a5f] font-medium transition-colors">
-                Contato
-              </Link>
-            </nav>
-
-            {/* CTA Buttons - Apenas públicos */}
-            <div className="flex items-center space-x-3">
-              <Link 
-                to="/Login" 
-                className="flex items-center text-[#1e3a5f] hover:text-[#d4af37] font-medium transition-colors"
-              >
-                <LogIn className="w-4 h-4 mr-1" />
-                Entrar
-              </Link>
-              <Link 
-                to="/Login?tab=cadastro" 
-                className="bg-[#1e3a5f] hover:bg-[#152a45] text-white px-5 py-2 rounded-lg font-medium transition-colors flex items-center"
-              >
-                <UserPlus className="w-4 h-4 mr-2" />
-                Associe-se
-              </Link>
-            </div>
-          </div>
-        </div>
-      </header>
+      <PublicHeader />
 
       {/* Hero Section */}
       <section className="relative bg-gradient-to-br from-[#1e3a5f] via-[#2a4a73] to-[#1e3a5f] text-white overflow-hidden">
@@ -296,56 +242,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="bg-gray-900 text-gray-400 py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid md:grid-cols-4 gap-8 mb-8">
-            <div>
-              <div className="flex items-center mb-4">
-                <img 
-                  src="/logo.png" 
-                  alt="COBRELIC" 
-                  className="h-13 w-auto object-contain mr-2"
-                />
-                
-              </div>
-              <p className="text-sm">
-                Confederação Brasileira de Líderes Comunitários
-              </p>
-            </div>
-            
-            <div>
-              <h4 className="text-white font-semibold mb-4">Links Rápidos</h4>
-              <ul className="space-y-2 text-sm">
-                <li><Link to="/Login" className="hover:text-white transition-colors">Login</Link></li>
-                <li><Link to="/Cadastro" className="hover:text-white transition-colors">Associar-se</Link></li>
-                <li><Link to="/Representantes" className="hover:text-white transition-colors">Representantes</Link></li>
-                <li><Link to="/Beneficios" className="hover:text-white transition-colors">Benefícios</Link></li>
-              </ul>
-            </div>
-            
-            <div>
-              <h4 className="text-white font-semibold mb-4">Informações</h4>
-              <ul className="space-y-2 text-sm">
-                <li><Link to="/Planos" className="hover:text-white transition-colors">Planos</Link></li>
-                <li><Link to="/VerificarCarteirinha" className="hover:text-white transition-colors">Verificar Carteirinha</Link></li>
-                <li><Link to="/admin/login" className="hover:text-white transition-colors">Área Administrativa</Link></li>
-              </ul>
-            </div>
-            
-            <div>
-              <h4 className="text-white font-semibold mb-4">Contato</h4>
-              <p className="text-sm">
-                Em breve: Central de atendimento
-              </p>
-            </div>
-          </div>
-          
-          <div className="border-t border-gray-800 pt-8 text-center text-sm">
-            <p>&copy; 2024 COBRELIC. Todos os direitos reservados.</p>
-          </div>
-        </div>
-      </footer>
+      <PublicFooter />
     </div>
   );
 }

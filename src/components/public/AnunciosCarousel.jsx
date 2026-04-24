@@ -85,7 +85,7 @@ export default function AnunciosCarousel({ posicao = 'topo', estado, cidade, nac
   return (
     <div className="relative rounded-xl overflow-hidden bg-gray-100">
       <a
-        href={currentAnuncio.link_destino || '#'}
+        href={currentAnuncio.link || '#'}
         target="_blank"
         rel="noopener noreferrer"
         className="block relative group"
@@ -95,7 +95,7 @@ export default function AnunciosCarousel({ posicao = 'topo', estado, cidade, nac
           alt={currentAnuncio.titulo}
           className="w-full h-32 md:h-40 object-cover transition-transform group-hover:scale-105"
         />
-        {currentAnuncio.link_destino && (
+        {currentAnuncio.link && (
           <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
             <ExternalLink className="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
           </div>
