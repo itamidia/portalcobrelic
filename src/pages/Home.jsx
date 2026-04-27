@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import PublicHeader from '../components/public/PublicHeader';
 import PublicFooter from '../components/public/PublicFooter';
+import PWAInstallBanner from '../components/PWAInstallBanner';
 
 export default function Home() {
   return (
@@ -243,6 +244,9 @@ export default function Home() {
       </section>
 
       <PublicFooter />
+      
+      {/* Banner de instalação PWA */}
+      <PWAInstallBanner />
     </div>
   );
 }
