@@ -9,7 +9,7 @@ const pagesWithoutNav = ['Home', 'Cadastro', 'VerificarCarteirinha', 'AdminLogin
 
 const publicPages = ['Home', 'Representantes', 'VerificarCarteirinha', 'Cadastro', 'ClubeBeneficios', 'AdminLogin', 'CidadeDetalhes', 'CadastroPresidente', 'CadastroDiretoria', 'Associados', 'Beneficios', 'Planos', 'Contato', 'Sobre', 'PlanosPublico', 'NoticiasPublico', 'NoticiaDetalhes'];
 
-const userPages = ['Dashboard', 'Perfil', 'Carteirinha', 'Beneficios'];
+const userPages = ['Dashboard', 'Perfil', 'Carteirinha', 'Beneficios', 'Notificacoes'];
 
 export default function Layout({ children, currentPageName }) {
   const navigate = useNavigate();

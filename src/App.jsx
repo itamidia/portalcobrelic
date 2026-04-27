@@ -80,9 +80,18 @@ const AuthenticatedApp = () => {
           <Navigate to="/Login" replace />
         )
       } />
+      <Route path="/Notificacoes" element={
+        isAuthenticated ? (
+          <LayoutWrapper currentPageName="Notificacoes">
+            <Pages.Notificacoes />
+          </LayoutWrapper>
+        ) : (
+          <Navigate to="/Login" replace />
+        )
+      } />
       {Object.entries(Pages).map(([path, Page]) => {
         // Pular páginas já definidas como públicas ou com rotas explícitas
-        const publicPages = ['Home', 'Login', 'Cadastro', 'VerificarCarteirinha', 'CidadeDetalhes', 'Representantes', 'Beneficios', 'Planos', 'Contato', 'Sobre', 'PlanosPublico'];
+        const publicPages = ['Home', 'Login', 'Cadastro', 'VerificarCarteirinha', 'CidadeDetalhes', 'Representantes', 'Beneficios', 'Planos', 'Contato', 'Sobre', 'PlanosPublico', 'Notificacoes'];
         const adminPages = ['Admin', 'AdminLogin', 'AdminAprovacoes', 'AdminAprovarPresidentes', 'AdminAnuncios', 'AdminAssociados', 'AdminBeneficios', 'AdminCarteirinhas', 'AdminConfiguracoes', 'AdminDiretoria', 'AdminFinanceiro', 'AdminMinhaEquipe', 'AdminNoticias', 'AdminNotificacoes', 'AdminPlanos', 'AdminRepresentantes', 'AdminVideoClube'];
         if (publicPages.includes(path) || adminPages.includes(path)) {
           return null;

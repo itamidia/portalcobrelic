@@ -80,6 +80,7 @@ import Financeiro from './pages/Financeiro';
 import Home from './pages/Home';
 import NoticiasPublico from './pages/NoticiasPublico';
 import NoticiaDetalhes from './pages/NoticiaDetalhes';
+import Notificacoes from './pages/Notificacoes';
 import Login from './pages/Login';
 import Perfil from './pages/Perfil';
 import Planos from './pages/Planos';
@@ -125,6 +126,7 @@ export const PAGES = {
     "Login": Login,
     "NoticiasPublico": NoticiasPublico,
     "NoticiaDetalhes": NoticiaDetalhes,
+    "Notificacoes": Notificacoes,
     "Perfil": Perfil,
     "Planos": Planos,
     "VerificarCarteirinha": VerificarCarteirinha,

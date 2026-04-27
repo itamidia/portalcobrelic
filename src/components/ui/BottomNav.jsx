@@ -1,11 +1,12 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Gift, CreditCard, User, Wallet } from 'lucide-react';
+import { Home, Gift, CreditCard, User, Wallet, Bell } from 'lucide-react';
 import { createPageUrl } from '@/utils';
 
 const navItems = [
   { name: 'Home', icon: Home, page: 'Dashboard' },
   { name: 'Benefícios', icon: Gift, page: 'Beneficios' },
+  { name: 'Notificações', icon: Bell, page: 'Notificacoes' },
   { name: 'Financeiro', icon: Wallet, page: 'Financeiro' },
   { name: 'Perfil', icon: User, page: 'Perfil' },
 ];
