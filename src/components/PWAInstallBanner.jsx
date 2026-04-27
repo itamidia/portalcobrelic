@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
 import { Smartphone, Apple, X } from 'lucide-react';
 
 export default function PWAInstallBanner() {
@@ -9,35 +8,41 @@ export default function PWAInstallBanner() {
   const [isInstalled, setIsInstalled] = useState(false);
 
   useEffect(() => {
-    // Verificar se é iOS
-    const iOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-    setIsIOS(iOS);
+    try {
+      // Verificar se é iOS
+      const iOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+      setIsIOS(iOS);
 
-    // Verificar se já está instalado
-    if (window.matchMedia('(display-mode: standalone)').matches || 
-        window.navigator.standalone === true) {
-      setIsInstalled(true);
-      return;
+      // Verificar se já está instalado
+      const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
+          window.navigator.standalone === true;
+      
+      if (isStandalone) {
+        setIsInstalled(true);
+        return;
+      }
+
+      // Capturar o evento beforeinstallprompt (Android/Chrome)
+      const handleBeforeInstallPrompt = (e) => {
+        e.preventDefault();
+        setDeferredPrompt(e);
+        setIsVisible(true);
+      };
+
+      window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+      // Para iOS, sempre mostrar o banner se não estiver instalado
+      if (iOS && !isStandalone) {
+        setTimeout(() => setIsVisible(true), 2000); // Delay para não aparecer imediatamente
+      }
+
+      return () => {
+        window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      };
+    } catch (error) {
+      console.error('Erro no PWAInstallBanner:', error);
     }
-
-    // Capturar o evento beforeinstallprompt (Android/Chrome)
-    const handleBeforeInstallPrompt = (e) => {
-      e.preventDefault();
-      setDeferredPrompt(e);
-      setIsVisible(true);
-    };
-
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-
-    // Para iOS, sempre mostrar o banner se não estiver instalado
-    if (iOS && !isInstalled) {
-      setIsVisible(true);
-    }
-
-    return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    };
-  }, [isInstalled]);
+  }, []);
 
   const handleInstallClick = async () => {
     if (!deferredPrompt) return;
@@ -97,13 +102,13 @@ export default function PWAInstallBanner() {
           <p className="text-sm text-gray-600">
             Instale nosso aplicativo para acesso rápido e notificações
           </p>
-          <Button 
+          <button 
             onClick={handleInstallClick}
-            className="w-full bg-[#1e3a5f] hover:bg-[#152a45] text-white"
+            className="w-full bg-[#1e3a5f] hover:bg-[#152a45] text-white py-2 px-4 rounded flex items-center justify-center gap-2 transition-colors"
           >
-            <Smartphone className="w-4 h-4 mr-2" />
+            <Smartphone className="w-4 h-4" />
             Instalar Aplicativo
-          </Button>
+          </button>
           <p className="text-xs text-center text-gray-400">
             Android • Chrome/Samsung Internet
           </p>

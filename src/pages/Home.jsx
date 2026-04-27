@@ -10,11 +10,13 @@ import {
   Award,
   Heart,
   Globe,
-  UserPlus
+  UserPlus,
+  Smartphone,
+  Apple,
+  Download
 } from 'lucide-react';
 import PublicHeader from '../components/public/PublicHeader';
 import PublicFooter from '../components/public/PublicFooter';
-import PWAInstallBanner from '../components/PWAInstallBanner';
 
 export default function Home() {
   return (
@@ -108,6 +110,56 @@ export default function Home() {
                   </div>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Download App Section */}
+      <section className="py-16 bg-white">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="bg-gradient-to-r from-[#1e3a5f] to-[#2a4a73] rounded-2xl p-8 md:p-12 text-white text-center">
+            <h2 className="text-2xl md:text-3xl font-bold mb-4">Baixe o App COBRELIC</h2>
+            <p className="text-gray-300 mb-8 max-w-xl mx-auto">
+              Instale nosso aplicativo no seu celular para acesso rápido, notificações em tempo real e experiência otimizada.
+            </p>
+            
+            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+              {/* Android Button */}
+              <div className="bg-white/10 hover:bg-white/20 rounded-xl p-4 transition-colors cursor-pointer w-full sm:w-auto">
+                <div className="flex items-center gap-3">
+                  <div className="bg-white rounded-lg p-2">
+                    <Smartphone className="w-6 h-6 text-[#1e3a5f]" />
+                  </div>
+                  <div className="text-left">
+                    <p className="text-xs text-gray-400">Disponível para</p>
+                    <p className="font-semibold">Android</p>
+                  </div>
+                </div>
+                <p className="text-xs text-gray-400 mt-2">
+                  Chrome → Menu → "Adicionar à tela inicial"
+                </p>
+              </div>
+
+              {/* iPhone Button */}
+              <div className="bg-white/10 hover:bg-white/20 rounded-xl p-4 transition-colors cursor-pointer w-full sm:w-auto">
+                <div className="flex items-center gap-3">
+                  <div className="bg-white rounded-lg p-2">
+                    <Apple className="w-6 h-6 text-[#1e3a5f]" />
+                  </div>
+                  <div className="text-left">
+                    <p className="text-xs text-gray-400">Disponível para</p>
+                    <p className="font-semibold">iPhone</p>
+                  </div>
+                </div>
+                <p className="text-xs text-gray-400 mt-2">
+                  Safari → Compartilhar → "Adicionar à Tela de Início"
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-8 flex items-center justify-center gap-2 text-sm text-gray-400">
+                            
             </div>
           </div>
         </div>
@@ -244,9 +296,6 @@ export default function Home() {
       </section>
 
       <PublicFooter />
-      
-      {/* Banner de instalação PWA */}
-      <PWAInstallBanner />
     </div>
   );
 }
