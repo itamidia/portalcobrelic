@@ -46,11 +46,16 @@ export default function Representantes() {
   const { data: representantes = [], isLoading } = useQuery({
     queryKey: ['representantes-publico'],
     queryFn: async () => {
+      console.log('[DEBUG] Iniciando query representantes...');
       const { data, error } = await supabase
         .from('representantes')
-        .select('*')
-        .eq('ativo', true);
-      if (error) throw error;
+        .select('*');
+      if (error) {
+        console.error('[DEBUG] Erro na query:', error);
+        throw error;
+      }
+      console.log('[DEBUG] Representantes carregados:', data?.length || 0);
+      console.log('[DEBUG] Dados:', data);
       return data || [];
     },
   });
@@ -59,6 +64,7 @@ export default function Representantes() {
   const estados = useMemo(() => {
     if (!representantes || !Array.isArray(representantes)) return [];
     const uniqueEstados = [...new Set(representantes.map(r => r.estado))].filter(Boolean);
+    console.log('[DEBUG] Estados extraídos:', uniqueEstados);
     return uniqueEstados.sort();
   }, [representantes]);
 
@@ -328,7 +334,7 @@ export default function Representantes() {
               Nossos Representantes
             </h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
-              {representantes.slice(0, 5).map(representante => (
+              {representantes.map(representante => (
                 <RepresentanteMiniCard 
                   key={representante.id} 
                   representante={representante} 

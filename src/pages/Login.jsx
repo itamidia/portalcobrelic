@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '@/lib/AuthContext';
+import { useAuth, getAuthErrorMessage } from '@/lib/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -8,15 +8,25 @@ import { toast } from 'sonner';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { Loader2, Shield, Users, Award, Heart, Globe, ChevronRight, MapPin } from 'lucide-react';
 
+const EMPTY_FORM_ERRORS = {
+  email: '',
+  password: '',
+  confirmPassword: '',
+  geral: '',
+};
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 export default function Login() {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
-  const { signIn, signUp } = useAuth();
+  const [formErrors, setFormErrors] = useState(EMPTY_FORM_ERRORS);
+  const { signIn, signUp, logout } = useAuth();
 
   // Verificar se deve mostrar cadastro via query param
   useEffect(() => {
@@ -26,32 +36,115 @@ export default function Login() {
     }
   }, [searchParams]);
 
+  const clearFormErrors = () => setFormErrors(EMPTY_FORM_ERRORS);
+
+  const switchToLogin = () => {
+    setIsSignUp(false);
+    setConfirmPassword('');
+    clearFormErrors();
+    setSearchParams({});
+  };
+
+  const switchToSignUp = () => {
+    setIsSignUp(true);
+    clearFormErrors();
+    setSearchParams({ tab: 'cadastro' });
+  };
+
+  const validateSignUpForm = () => {
+    const errors = { ...EMPTY_FORM_ERRORS };
+    const trimmedEmail = email.trim();
+
+    if (!trimmedEmail) {
+      errors.email = 'E-mail é obrigatório';
+    } else if (!EMAIL_REGEX.test(trimmedEmail)) {
+      errors.email = 'Informe um e-mail válido';
+    }
+
+    if (!password) {
+      errors.password = 'Senha é obrigatória';
+    } else if (password.length < 6) {
+      errors.password = 'A senha deve ter pelo menos 6 caracteres';
+    }
+
+    if (!confirmPassword) {
+      errors.confirmPassword = 'Confirme sua senha';
+    } else if (password !== confirmPassword) {
+      errors.confirmPassword = 'A confirmação de senha deve ser igual à senha';
+    }
+
+    setFormErrors(errors);
+    return !errors.email && !errors.password && !errors.confirmPassword;
+  };
+
+  const validateLoginForm = () => {
+    const errors = { ...EMPTY_FORM_ERRORS };
+    const trimmedEmail = email.trim();
+
+    if (!trimmedEmail) {
+      errors.email = 'E-mail é obrigatório';
+    } else if (!EMAIL_REGEX.test(trimmedEmail)) {
+      errors.email = 'Informe um e-mail válido';
+    }
+
+    if (!password) {
+      errors.password = 'Senha é obrigatória';
+    }
+
+    setFormErrors(errors);
+    return !errors.email && !errors.password;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    clearFormErrors();
     setIsLoading(true);
 
     try {
       if (isSignUp) {
-        if (password !== confirmPassword) {
-          toast.error('As senhas não coincidem');
-          setIsLoading(false);
+        if (!validateSignUpForm()) {
+          toast.error('Corrija os erros no formulário');
           return;
         }
-        if (password.length < 6) {
-          toast.error('A senha deve ter pelo menos 6 caracteres');
-          setIsLoading(false);
-          return;
-        }
-        await signUp(email, password);
-        toast.success('Conta criada com sucesso! Faça login para continuar.');
-        setIsSignUp(false);
+
+        await signUp(email.trim(), password);
+        await logout(false);
+
+        toast.success('Cadastro realizado com sucesso! Faça login para continuar.');
+        setPassword('');
+        setConfirmPassword('');
+        clearFormErrors();
+        switchToLogin();
+        navigate('/Login', { replace: true });
       } else {
-        await signIn(email, password);
+        if (!validateLoginForm()) {
+          toast.error('Corrija os erros no formulário');
+          return;
+        }
+
+        await signIn(email.trim(), password);
         toast.success('Login realizado com sucesso!');
         navigate('/Dashboard');
       }
     } catch (error) {
-      toast.error('Erro: ' + (error.message || 'Verifique suas credenciais'));
+      const message = getAuthErrorMessage(error);
+
+      if (
+        error?.code === 'user_already_exists' ||
+        message.includes('já está cadastrado')
+      ) {
+        setFormErrors(prev => ({ ...prev, email: message }));
+      } else if (message.includes('E-mail ou senha incorretos')) {
+        setFormErrors(prev => ({ ...prev, geral: message }));
+      } else if (message.includes('senha')) {
+        setFormErrors(prev => ({ ...prev, password: message }));
+      } else if (message.includes('e-mail')) {
+        setFormErrors(prev => ({ ...prev, email: message }));
+      } else {
+        setFormErrors(prev => ({ ...prev, geral: message }));
+      }
+
+      toast.error(message);
     } finally {
       setIsLoading(false);
     }
@@ -154,6 +247,11 @@ export default function Login() {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
+              {formErrors.geral && (
+                <p className="text-red-600 text-sm bg-red-50 p-3 rounded border border-red-200">
+                  {formErrors.geral}
+                </p>
+              )}
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <Input
@@ -161,9 +259,18 @@ export default function Login() {
                   type="email"
                   placeholder="seu@email.com"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    if (formErrors.email) {
+                      setFormErrors(prev => ({ ...prev, email: '' }));
+                    }
+                  }}
+                  className={formErrors.email ? 'border-red-500' : ''}
                   required
                 />
+                {formErrors.email && (
+                  <p className="text-red-500 text-sm">{formErrors.email}</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="password">Senha</Label>
@@ -172,10 +279,19 @@ export default function Login() {
                   type="password"
                   placeholder="••••••••"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    if (formErrors.password) {
+                      setFormErrors(prev => ({ ...prev, password: '' }));
+                    }
+                  }}
+                  className={formErrors.password ? 'border-red-500' : ''}
                   required
                   minLength={isSignUp ? 6 : undefined}
                 />
+                {formErrors.password && (
+                  <p className="text-red-500 text-sm">{formErrors.password}</p>
+                )}
               </div>
               {isSignUp && (
                 <div className="space-y-2">
@@ -185,9 +301,18 @@ export default function Login() {
                     type="password"
                     placeholder="••••••••"
                     value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    onChange={(e) => {
+                      setConfirmPassword(e.target.value);
+                      if (formErrors.confirmPassword) {
+                        setFormErrors(prev => ({ ...prev, confirmPassword: '' }));
+                      }
+                    }}
+                    className={formErrors.confirmPassword ? 'border-red-500' : ''}
                     required
                   />
+                  {formErrors.confirmPassword && (
+                    <p className="text-red-500 text-sm">{formErrors.confirmPassword}</p>
+                  )}
                 </div>
               )}
               <Button
@@ -211,7 +336,7 @@ export default function Login() {
                 <>
                   Já tem uma conta?{' '}
                   <button 
-                    onClick={() => setIsSignUp(false)} 
+                    onClick={switchToLogin} 
                     className="text-[#1e3a5f] font-medium hover:underline"
                     type="button"
                   >
@@ -222,7 +347,7 @@ export default function Login() {
                 <>
                   Ainda não tem conta?{' '}
                   <button 
-                    onClick={() => setIsSignUp(true)} 
+                    onClick={switchToSignUp} 
                     className="text-[#1e3a5f] font-medium hover:underline"
                     type="button"
                   >

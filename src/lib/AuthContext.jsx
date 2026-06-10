@@ -3,6 +3,37 @@ import { supabase } from '@/lib/supabase';
 
 const AuthContext = createContext();
 
+export function getAuthErrorMessage(error) {
+  const message = (error?.message || '').toLowerCase();
+  const code = error?.code || '';
+
+  if (
+    code === 'user_already_exists' ||
+    message.includes('already registered') ||
+    message.includes('already been registered') ||
+    message.includes('user already registered')
+  ) {
+    return 'Este e-mail já está cadastrado';
+  }
+  if (message.includes('invalid login credentials')) {
+    return 'E-mail ou senha incorretos';
+  }
+  if (message.includes('valid email') || message.includes('invalid email')) {
+    return 'Informe um e-mail válido';
+  }
+  if (message.includes('password') && (message.includes('6') || message.includes('short'))) {
+    return 'A senha deve ter pelo menos 6 caracteres';
+  }
+  if (message.includes('rate limit') || message.includes('too many requests')) {
+    return 'Muitas tentativas. Aguarde alguns minutos e tente novamente';
+  }
+  if (message.includes('network') || message.includes('fetch')) {
+    return 'Erro de conexão. Verifique sua internet e tente novamente';
+  }
+
+  return error?.message || 'Ocorreu um erro. Tente novamente';
+}
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -129,6 +160,14 @@ export const AuthProvider = ({ children }) => {
       options: { data: metadata }
     });
     if (error) throw error;
+
+    // Supabase pode não retornar erro quando o e-mail já existe (por segurança)
+    if (data?.user?.identities?.length === 0) {
+      const duplicateError = new Error('Este e-mail já está cadastrado');
+      duplicateError.code = 'user_already_exists';
+      throw duplicateError;
+    }
+
     return data;
   };
 

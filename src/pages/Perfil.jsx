@@ -291,18 +291,6 @@ export default function Perfil() {
               />
             </div>
 
-            
-            <div>
-              <Label className="text-gray-600">Data de Nascimento</Label>
-              <Input
-                type="date"
-                value={formData.data_nascimento || ''}
-                onChange={(e) => setFormData({ ...formData, data_nascimento: e.target.value })}
-                disabled={!editMode}
-                className="mt-1"
-              />
-            </div>
-
             <div>
               <Label className="text-gray-600">Cidade</Label>
               <Input
