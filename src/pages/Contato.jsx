@@ -200,7 +200,7 @@ export default function Contato() {
                   </div>
                   <div>
                     <p className="font-semibold text-gray-800">E-mail</p>
-                    <p className="text-gray-600">contato@cobrellic.org.br</p>
+                    <p className="text-gray-600">contato@cobrelic.com.br</p>
                   </div>
                 </div>
 
@@ -220,7 +220,7 @@ export default function Contato() {
                   </div>
                   <div>
                     <p className="font-semibold text-gray-800">Horário de Atendimento</p>
-                    <p className="text-gray-600">Segunda a Sexta: 9h às 18h</p>
+                    <p className="text-gray-600">Segunda a Sexta: 9h às 17h</p>
                   </div>
                 </div>
               </div>
