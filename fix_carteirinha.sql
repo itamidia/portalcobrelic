@@ -9,7 +9,7 @@ CREATE INDEX IF NOT EXISTS idx_associados_codigo_carteirinha ON associados(codig
 
 -- Atualizar registros existentes com código gerado automaticamente
 UPDATE associados 
-SET codigo_carteirinha = 'ANALC-' || UPPER(SUBSTRING(MD5(RANDOM()::TEXT), 1, 8))
+SET codigo_carteirinha = 'COBRELIC-' || UPPER(SUBSTRING(MD5(RANDOM()::TEXT), 1, 8))
 WHERE codigo_carteirinha IS NULL;
 
 -- Garantir que RLS está habilitado

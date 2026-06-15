@@ -16,15 +16,15 @@ export default function CadastreSeInfo() {
           <div className="flex items-center justify-center gap-3 mb-6">
             <img 
               src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/693099089062f3cc56b4fd72/5c2541974_AssociaoNacionaldosLder4esComunitrios7.png" 
-              alt="ANALC"
+              alt="COBRELIC"
               className="w-16 h-16 rounded-xl object-contain bg-white"
             />
           </div>
           <h1 className="text-white text-3xl md:text-4xl font-bold mb-4">
-            Faça Parte da ANALC
+            Faça Parte da COBRELIC
           </h1>
           <p className="text-white/70 text-lg max-w-2xl mx-auto">
-            Associação Nacional dos Líderes Comunitários - Junte-se a milhares de líderes em todo o Brasil
+            Confederação Brasileira de Líderes Comunitários - Junte-se a milhares de líderes em todo o Brasil
           </p>
         </div>
       </div>
@@ -37,7 +37,7 @@ export default function CadastreSeInfo() {
             <iframe
               className="w-full h-full"
               src="https://www.youtube.com/embed/dQw4w9WgXcQ"
-              title="Vídeo Explicativo ANALC"
+              title="Vídeo Explicativo COBRELIC"
               frameBorder="0"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen
@@ -45,7 +45,7 @@ export default function CadastreSeInfo() {
           </div>
           <div className="p-6">
             <h2 className="text-xl font-bold text-gray-800 mb-2">
-              Conheça a ANALC
+              Conheça a COBRELIC
             </h2>
             <p className="text-gray-600">
               Assista ao vídeo e descubra como a Associação Nacional dos Líderes Comunitários 

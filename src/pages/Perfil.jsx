@@ -372,16 +372,16 @@ export default function Perfil() {
               <DialogTrigger asChild>
                 <button className="w-full flex items-center gap-4 p-4 hover:bg-gray-50 transition-colors border-b">
                   <Shield className="w-5 h-5 text-gray-500" />
-                  <span className="flex-1 text-left text-gray-700">Sobre a ANALC</span>
+                  <span className="flex-1 text-left text-gray-700">Sobre a COBRELIC</span>
                   <ChevronRight className="w-4 h-4 text-gray-400" />
                 </button>
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>Sobre a ANALC</DialogTitle>
+                  <DialogTitle>Sobre a COBRELIC</DialogTitle>
                 </DialogHeader>
                 <p className="text-gray-600 text-sm leading-relaxed">
-                  A ANALC — Associação Nacional de Apoio Legal e Comunitário — existe para garantir apoio, 
+                  A COBRELIC é a maior confederação de líderes comunitários do Brasil, unindo forças para transformar comunidades em todo o território nacional — existe para garantir apoio, 
                   assistência e benefícios sociais acessíveis para famílias de todo o Brasil. 
                   Nosso compromisso é oferecer soluções práticas, seguras e acessíveis para melhorar 
                   a qualidade de vida dos nossos associados.
@@ -402,7 +402,7 @@ export default function Perfil() {
                   <DialogTitle>Termos de Uso e Privacidade</DialogTitle>
                 </DialogHeader>
                 <p className="text-gray-600 text-sm leading-relaxed">
-                  Ao utilizar os serviços da ANALC, você concorda com nossos termos de uso e política de privacidade.
+                  Ao utilizar os serviços da COBRELIC, você concorda com nossos termos de uso e política de privacidade.
                   Seus dados pessoais são tratados com segurança e utilizados exclusivamente para prestação dos serviços contratados.
                 </p>
               </DialogContent>

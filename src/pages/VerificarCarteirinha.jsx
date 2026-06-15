@@ -107,7 +107,7 @@ export default function VerificarCarteirinha() {
           <div className="w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center mx-auto mb-3">
             <Shield className="w-9 h-9 text-[#d4af37]" />
           </div>
-          <h1 className="text-white text-xl font-bold">ANALC</h1>
+          <h1 className="text-white text-xl font-bold">COBRELIC</h1>
           <p className="text-white/60 text-sm">Verificação de Carteirinha</p>
         </div>
 
@@ -166,7 +166,7 @@ export default function VerificarCarteirinha() {
 
         {/* Footer */}
         <p className="text-center text-white/40 text-xs mt-6">
-          Associação Nacional de Apoio Legal e Comunitário
+          Confederação de líderes comunitários do Brasil
         </p>
       </div>
     </div>

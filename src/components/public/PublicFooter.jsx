@@ -122,7 +122,7 @@ export default function PublicFooter() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8 pt-8 border-t border-white/10">
           <div className="flex items-center gap-2 text-white/70 text-sm">
             <Mail className="w-4 h-4" />
-            <span>contato@cobrelc.org.br</span>
+            <span>contato@cobrelic.com.br</span>
           </div>
           <div className="flex items-center gap-2 text-white/70 text-sm">
             <Phone className="w-4 h-4" />
@@ -130,7 +130,7 @@ export default function PublicFooter() {
           </div>
           <div className="flex items-center gap-2 text-white/70 text-sm">
             <MapPin className="w-4 h-4" />
-            <span>São Paulo, SP - Brasil</span>
+            <span>Brasília, DF - Brasil</span>
           </div>
         </div>
       </div>

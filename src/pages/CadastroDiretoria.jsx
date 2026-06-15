@@ -325,7 +325,7 @@ export default function CadastroDiretoria() {
             <div className="bg-blue-50 p-4 rounded-lg">
               <p className="text-sm text-gray-700">
                 <strong>Importante:</strong> Você será cadastrado como membro da diretoria municipal de {formData.cidade || 'sua cidade'}. 
-                Seu perfil aparecerá na página da cidade no portal ANALC.
+                Seu perfil aparecerá na página da cidade no portal COBRELIC.
               </p>
             </div>
 

@@ -31,8 +31,8 @@ export default function Carteirinha() {
     if (navigator.share) {
       try {
         await navigator.share({
-          title: 'Carteirinha ANALC',
-          text: `Carteirinha de Líder Comunitário ANALC - ${representante?.nome}`,
+          title: 'Carteirinha COBRELIC',
+          text: `Carteirinha de Líder Comunitário COBRELIC - ${representante?.nome}`,
           url: `${window.location.origin}/VerificarCarteirinha?codigo=${representante?.id}`,
         });
       } catch (err) {
@@ -66,7 +66,7 @@ export default function Carteirinha() {
           </div>
           <h1 className="text-white text-2xl font-bold mb-1">Carteirinha Digital</h1>
           <p className="text-white/60 text-sm">
-            Sua identificação como associado ANALC
+            Sua identificação como associado COBRELIC
           </p>
         </div>
       </div>
@@ -95,7 +95,7 @@ export default function Carteirinha() {
             <div className="bg-gradient-to-br from-[#1e3a5f] to-[#152a45] rounded-2xl p-8 text-white shadow-2xl">
               <div className="flex justify-between items-start mb-6">
                 <div>
-                  <p className="text-xs text-white/60 mb-2">ANALC - Líder Comunitário</p>
+                  <p className="text-xs text-white/60 mb-2">COBRELIC - Líder Comunitário</p>
                   <p className="font-bold text-xl mb-1">{representante.nome}</p>
                   <p className="text-sm text-white/80">{representante.cargo}</p>
                 </div>

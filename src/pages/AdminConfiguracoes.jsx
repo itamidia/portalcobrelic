@@ -48,7 +48,7 @@ const defaultConfigs = {
   secondary_color: '#d4af37',
   
   // Institutional
-  about_text: 'A ANALC — Associação Nacional de Apoio Legal e Comunitário — existe para garantir apoio, assistência e benefícios sociais acessíveis para famílias de todo o Brasil. Nosso compromisso é oferecer soluções práticas, seguras e acessíveis para melhorar a qualidade de vida dos nossos associados.',
+  about_text: 'A COBRELIC — Confederação Brasileira de Líderes Comunitários — existe para garantir apoio, assistência e benefícios sociais acessíveis para famílias de todo o Brasil. Nosso compromisso é oferecer soluções práticas, seguras e acessíveis para melhorar a qualidade de vida dos nossos associados.',
   terms_text: '',
   privacy_text: '',
 };
@@ -307,7 +307,7 @@ export default function AdminConfiguracoes() {
                     <Input
                       value={configs.smtp_from_email || ''}
                       onChange={(e) => setConfigs({ ...configs, smtp_from_email: e.target.value })}
-                      placeholder="noreply@analc.org.br"
+                      placeholder="noreply@cobrelic.com.br"
                       className="mt-1"
                     />
                   </div>
@@ -316,7 +316,7 @@ export default function AdminConfiguracoes() {
                     <Input
                       value={configs.smtp_from_name || ''}
                       onChange={(e) => setConfigs({ ...configs, smtp_from_name: e.target.value })}
-                      placeholder="ANALC"
+                      placeholder="COBRELIC"
                       className="mt-1"
                     />
                   </div>
@@ -406,7 +406,7 @@ export default function AdminConfiguracoes() {
                   </div>
                 )}
                 <div>
-                  <Label>Sobre a ANALC</Label>
+                  <Label>Sobre a COBRELIC</Label>
                   <Textarea
                     value={configs.about_text || ''}
                     onChange={(e) => setConfigs({ ...configs, about_text: e.target.value })}
