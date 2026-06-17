@@ -241,7 +241,7 @@ export default function Login() {
             </CardTitle>
             <CardDescription>
               {isSignUp 
-                ? 'Preencha os dados abaixo para se associar' 
+                ? 'Preencha os dados abaixo para se associar - Será enviado um email de confirmação, é necessário confirmar clicando no link enviado!' 
                 : 'Faça login para acessar sua área de líder comunitário'}
             </CardDescription>
           </CardHeader>
