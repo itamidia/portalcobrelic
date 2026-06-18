@@ -30,6 +30,9 @@ export function getAuthErrorMessage(error) {
   if (message.includes('network') || message.includes('fetch')) {
     return 'Erro de conexão. Verifique sua internet e tente novamente';
   }
+  if (message.includes('email not confirmed')) {
+    return 'Confirme seu e-mail antes de redefinir a senha';
+  }
 
   return error?.message || 'Ocorreu um erro. Tente novamente';
 }
@@ -171,6 +174,18 @@ export const AuthProvider = ({ children }) => {
     return data;
   };
 
+  const resetPassword = async (email) => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+      redirectTo: `${window.location.origin}/RedefinirSenha`,
+    });
+    if (error) throw error;
+  };
+
+  const updatePassword = async (password) => {
+    const { error } = await supabase.auth.updateUser({ password });
+    if (error) throw error;
+  };
+
   return (
     <AuthContext.Provider value={{ 
       user, 
@@ -182,7 +197,9 @@ export const AuthProvider = ({ children }) => {
       navigateToLogin,
       checkUserAuth,
       signIn,
-      signUp
+      signUp,
+      resetPassword,
+      updatePassword
     }}>
       {children}
     </AuthContext.Provider>

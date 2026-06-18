@@ -273,7 +273,17 @@ export default function Login() {
                 )}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="password">Senha</Label>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="password">Senha</Label>
+                  {!isSignUp && (
+                    <Link
+                      to="/RecuperarSenha"
+                      className="text-sm text-[#1e3a5f] hover:underline"
+                    >
+                      Esqueceu sua senha?
+                    </Link>
+                  )}
+                </div>
                 <Input
                   id="password"
                   type="password"

@@ -82,6 +82,8 @@ import NoticiasPublico from './pages/NoticiasPublico';
 import NoticiaDetalhes from './pages/NoticiaDetalhes';
 import Notificacoes from './pages/Notificacoes';
 import Login from './pages/Login';
+import RecuperarSenha from './pages/RecuperarSenha';
+import RedefinirSenha from './pages/RedefinirSenha';
 import Perfil from './pages/Perfil';
 import Planos from './pages/Planos';
 import VerificarCarteirinha from './pages/VerificarCarteirinha';
@@ -124,6 +126,8 @@ export const PAGES = {
     "Financeiro": Financeiro,
     "Home": Home,
     "Login": Login,
+    "RecuperarSenha": RecuperarSenha,
+    "RedefinirSenha": RedefinirSenha,
     "NoticiasPublico": NoticiasPublico,
     "NoticiaDetalhes": NoticiaDetalhes,
     "Notificacoes": Notificacoes,

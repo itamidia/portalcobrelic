@@ -122,8 +122,10 @@ export const auth = {
   onAuthStateChange: (callback) => 
     supabase.auth.onAuthStateChange(callback),
     
-  resetPassword: (email) => 
-    supabase.auth.resetPasswordForEmail(email),
+  resetPassword: (email, redirectTo) =>
+    supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: redirectTo || `${window.location.origin}/RedefinirSenha`,
+    }),
     
   updateUser: (data) => 
     supabase.auth.updateUser(data)

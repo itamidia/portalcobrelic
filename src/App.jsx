@@ -36,6 +36,8 @@ const AuthenticatedApp = () => {
       <Route path="/" element={<Pages.Home />} />
       <Route path="/Home" element={<Pages.Home />} />
       <Route path="/Login" element={<Pages.Login />} />
+      <Route path="/RecuperarSenha" element={<Pages.RecuperarSenha />} />
+      <Route path="/RedefinirSenha" element={<Pages.RedefinirSenha />} />
       <Route path="/Cadastro" element={<Pages.Cadastro />} />
       <Route path="/VerificarCarteirinha" element={<Pages.VerificarCarteirinha />} />
       <Route path="/CidadeDetalhes" element={<Pages.CidadeDetalhes />} />
@@ -92,7 +94,7 @@ const AuthenticatedApp = () => {
       } />
       {Object.entries(Pages).map(([path, Page]) => {
         // Pular páginas já definidas como públicas ou com rotas explícitas
-        const publicPages = ['Home', 'Login', 'Cadastro', 'VerificarCarteirinha', 'CidadeDetalhes', 'Representantes', 'Beneficios', 'Planos', 'Contato', 'Sobre', 'PlanosPublico', 'Notificacoes'];
+        const publicPages = ['Home', 'Login', 'RecuperarSenha', 'RedefinirSenha', 'Cadastro', 'VerificarCarteirinha', 'CidadeDetalhes', 'Representantes', 'Beneficios', 'Planos', 'Contato', 'Sobre', 'PlanosPublico', 'Notificacoes'];
         const adminPages = ['Admin', 'AdminLogin', 'AdminAprovacoes', 'AdminAprovarPresidentes', 'AdminAnuncios', 'AdminAssociados', 'AdminBeneficios', 'AdminCarteirinhas', 'AdminConfiguracoes', 'AdminDiretoria', 'AdminFinanceiro', 'AdminMinhaEquipe', 'AdminNoticias', 'AdminNotificacoes', 'AdminPlanos', 'AdminRepresentantes', 'AdminVideoClube'];
         if (publicPages.includes(path) || adminPages.includes(path)) {
           return null;
